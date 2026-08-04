@@ -2,48 +2,110 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table = 'users';
+
     protected $fillable = [
-        'name',
+        'rol_id',
+        'nombre',
+        'apellido',
+        'telefono',
+        'foto',
         'email',
         'password',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Devuelve el nombre completo del usuario.
+     */
+    public function getNombreCompletoAttribute(): string
+    {
+        return trim($this->nombre.' '.$this->apellido);
+    }
+
+    /**
+     * Un usuario pertenece a un rol.
+     */
+    public function rol(): BelongsTo
+    {
+        return $this->belongsTo(Rol::class);
+    }
+
+    /**
+     * Un usuario tiene muchas bicicletas.
+     */
+    public function bicicletas(): HasMany
+    {
+        return $this->hasMany(Bicicleta::class);
+    }
+
+    /**
+     * Un usuario puede realizar muchos reportes.
+     */
+    public function reportes(): HasMany
+    {
+        return $this->hasMany(Reporte::class);
+    }
+
+    /**
+     * Un usuario puede crear muchas rutas.
+     */
+    public function rutas(): HasMany
+    {
+        return $this->hasMany(Ruta::class);
+    }
+
+    /**
+     * Un usuario puede guardar muchas rutas favoritas.
+     */
+    public function favoritos(): HasMany
+    {
+        return $this->hasMany(Favorito::class);
+    }
+
+    /**
+     * Un usuario puede hacer muchas publicaciones.
+     */
+    public function publicaciones(): HasMany
+    {
+        return $this->hasMany(Publicacion::class);
+    }
+
+    /**
+     * Un usuario puede escribir muchos comentarios.
+     */
+    public function comentarios(): HasMany
+    {
+        return $this->hasMany(Comentario::class);
+    }
+
+    /**
+     * Un usuario puede recibir muchas notificaciones.
+     */
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(Notificacion::class);
     }
 }

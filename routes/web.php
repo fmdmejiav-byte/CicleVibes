@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BicicletaController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RouteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,6 +16,8 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
 
     Route::resource('bicicletas', BicicletaController::class);
+
+    Route::resource('rutas', RouteController::class);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

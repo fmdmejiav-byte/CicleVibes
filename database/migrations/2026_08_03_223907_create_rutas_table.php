@@ -9,42 +9,31 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-   public function up(): void
-{
-    Schema::create('rutas', function (Blueprint $table) {
-        $table->id();
+    public function up(): void
+    {
+        Schema::create('rutas', function (Blueprint $table) {
+            $table->id();
 
-        // Barrio al que pertenece la ruta
-        $table->foreignId('barrio_id')
-            ->constrained('barrios')
-            ->cascadeOnUpdate()
-            ->restrictOnDelete();
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
 
-        $table->string('nombre', 150);
+            $table->string('nombre', 150);
 
-        $table->string('origen');
+            $table->text('descripcion')->nullable();
 
-        $table->string('destino');
+            $table->string('origen');
 
-        $table->decimal('distancia', 5, 2);
+            $table->string('destino');
 
-        $table->enum('dificultad', [
-            'Baja',
-            'Media',
-            'Alta'
-        ]);
+            $table->decimal('distancia', 8, 2)->nullable();
 
-        $table->enum('nivel_seguridad', [
-            'Alto',
-            'Medio',
-            'Bajo'
-        ]);
+            $table->unsignedInteger('duracion')->nullable();
 
-        $table->text('descripcion')->nullable();
-
-        $table->timestamps();
-    });
-}
+            $table->timestamps();
+        });
+    }
 
     /**
      * Reverse the migrations.

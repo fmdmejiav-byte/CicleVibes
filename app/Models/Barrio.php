@@ -31,12 +31,4 @@ class Barrio extends Model
     {
         return $this->hasMany(Reporte::class);
     }
-
-    /**
-     * Un barrio puede tener muchas rutas.
-     */
-    public function rutas(): HasMany
-    {
-        return $this->hasMany(Ruta::class);
-    }
 }

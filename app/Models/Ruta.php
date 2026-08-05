@@ -2,22 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ruta extends Model
 {
+    use HasFactory;
+
     protected $table = 'rutas';
 
     protected $fillable = [
         'user_id',
-        'barrio_id',
         'nombre',
         'descripcion',
         'origen',
         'destino',
         'distancia',
+        'duracion',
     ];
 
     /**
@@ -26,14 +29,6 @@ class Ruta extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * La ruta pertenece a un barrio.
-     */
-    public function barrio(): BelongsTo
-    {
-        return $this->belongsTo(Barrio::class);
     }
 
     /**

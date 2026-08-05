@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             TipoBicicletaSeeder::class,
             TipoReporteSeeder::class,
             BicicletaSeeder::class,
+            RutaSeeder::class,
         ]);
     }
 }

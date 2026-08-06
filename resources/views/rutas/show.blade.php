@@ -59,6 +59,55 @@
 
             </div>
 
+            @if(config('services.google_maps.key') && $ruta->polilinea)
+                <div class="bg-white shadow rounded-lg p-6 mt-6">
+
+                    <h3 class="font-semibold text-lg text-gray-800 mb-3">
+                        Ruta en el mapa
+                    </h3>
+
+                    <div
+                        id="map-ruta"
+                        class="w-full bg-gray-200 rounded-lg shadow"
+                        style="height: 480px;"></div>
+
+                </div>
+
+                <script>
+                    window.initRutaShowMap = function () {
+                        const map = new google.maps.Map(document.getElementById('map-ruta'), {
+                            center: { lat: 10.9871, lng: -74.7890 },
+                            zoom: 12,
+                            mapTypeId: 'roadmap',
+                        });
+
+                        const coordenadas = @json($coordenadasRuta);
+
+                        if (!coordenadas || coordenadas.length < 2) {
+                            return;
+                        }
+
+                        new google.maps.Polyline({
+                            path: coordenadas,
+                            map: map,
+                            strokeColor: '#2563eb',
+                            strokeWeight: 6,
+                            strokeOpacity: 0.9,
+                        });
+
+                        new google.maps.Marker({ position: coordenadas[0], map: map, label: 'A' });
+                        new google.maps.Marker({ position: coordenadas[coordenadas.length - 1], map: map, label: 'B' });
+
+                        const bounds = new google.maps.LatLngBounds();
+                        coordenadas.forEach((punto) => bounds.extend(punto));
+                        map.fitBounds(bounds);
+                    };
+                </script>
+                <script
+                    async
+                    src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.key') }}&loading=async&callback=initRutaShowMap&v=weekly"></script>
+            @endif
+
         </div>
     </div>
 

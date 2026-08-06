@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\RouteCalculationException;
 use App\Http\Requests\StoreRutaRequest;
 use App\Http\Requests\UpdateRutaRequest;
 use App\Models\Ruta;
+use App\Services\BikeRouteService;
+use App\Support\Polyline;
+use Illuminate\Http\Request;
 
 class RouteController extends Controller
 {
@@ -29,6 +33,34 @@ class RouteController extends Controller
     }
 
     /**
+     * Calcula una ruta en bicicleta a través del BikeRouteService.
+     *
+     * El frontend nunca llama a Google Directions directamente: consume este
+     * endpoint y dibuja la geometría devuelta. Así el algoritmo futuro puede
+     * reemplazar o modificar la ruta sin tocar la vista.
+     */
+    public function calcular(Request $request, BikeRouteService $bikeRouteService)
+    {
+        $datos = $request->validate([
+            'origen' => ['required', 'string', 'max:255'],
+            'destino' => ['required', 'string', 'max:255'],
+        ]);
+
+        try {
+            $resultado = $bikeRouteService->calculate($datos['origen'], $datos['destino']);
+        } catch (RouteCalculationException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'polyline' => $resultado->polyline,
+            'distance' => $resultado->distance,
+            'duration' => $resultado->duration,
+            'coordinates' => $resultado->coordinates,
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(StoreRutaRequest $request)
@@ -41,6 +73,7 @@ class RouteController extends Controller
             'destino' => $request->destino,
             'distancia' => $request->distancia,
             'duracion' => $request->duracion,
+            'polilinea' => $request->polilinea,
         ]);
 
         return redirect()
@@ -55,7 +88,9 @@ class RouteController extends Controller
     {
         abort_if($ruta->user_id != auth()->id(), 403);
 
-        return view('rutas.show', compact('ruta'));
+        $coordenadasRuta = $ruta->polilinea ? Polyline::decode($ruta->polilinea) : [];
+
+        return view('rutas.show', compact('ruta', 'coordenadasRuta'));
     }
 
     /**
@@ -65,7 +100,9 @@ class RouteController extends Controller
     {
         abort_if($ruta->user_id != auth()->id(), 403);
 
-        return view('rutas.edit', compact('ruta'));
+        $coordenadasRuta = $ruta->polilinea ? Polyline::decode($ruta->polilinea) : [];
+
+        return view('rutas.edit', compact('ruta', 'coordenadasRuta'));
     }
 
     /**
@@ -82,6 +119,7 @@ class RouteController extends Controller
             'destino' => $request->destino,
             'distancia' => $request->distancia,
             'duracion' => $request->duracion,
+            'polilinea' => $request->polilinea,
         ]);
 
         return redirect()

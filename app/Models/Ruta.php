@@ -21,6 +21,7 @@ class Ruta extends Model
         'destino',
         'distancia',
         'duracion',
+        'polilinea',
     ];
 
     /**

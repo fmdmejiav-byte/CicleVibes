@@ -29,6 +29,7 @@ class UpdateRutaRequest extends FormRequest
             'destino' => ['required', 'string', 'max:255'],
             'distancia' => ['nullable', 'numeric', 'min:0'],
             'duracion' => ['nullable', 'integer', 'min:0'],
+            'polilinea' => ['nullable', 'string'],
         ];
     }
 }

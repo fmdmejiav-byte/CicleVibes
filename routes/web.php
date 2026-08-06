@@ -15,6 +15,8 @@ Route::get('/dashboard', function () {
 
 Route::middleware('auth')->group(function () {
 
+    Route::post('/rutas/calcular', [RouteController::class, 'calcular'])->name('rutas.calcular');
+
     Route::resource('bicicletas', BicicletaController::class);
 
     Route::resource('rutas', RouteController::class);

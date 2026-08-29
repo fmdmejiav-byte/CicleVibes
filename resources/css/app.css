@@ -1,3 +1,5 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,4 +13,190 @@
     #map {
         min-height: 100vh;
     }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/* Fondo decorativo de la identidad CicleVibes (mismo que la página de bienvenida). */
+.hero-bg {
+    background-image:
+        radial-gradient(circle at 15% 20%, rgba(16,185,129,0.18) 0%, transparent 40%),
+        radial-gradient(circle at 85% 25%, rgba(5,150,105,0.14) 0%, transparent 45%),
+        radial-gradient(circle at 50% 90%, rgba(16,185,129,0.10) 0%, transparent 50%);
+}
+
+.road-dash {
+    background-image: linear-gradient(to right, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 50%, transparent 50%, transparent 100%);
+    background-size: 24px 3px;
+    background-repeat: repeat-x;
+    background-position: bottom;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+@layer utilities {
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out both;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out both;
+    }
+
+    .animate-float {
+        animation: float 6s ease-in-out infinite;
+    }
+
+    .animate-pulse-soft {
+        animation: pulseSoft 2.5s ease-in-out infinite;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-12px);
+    }
+}
+
+@keyframes pulseSoft {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+
+/* ====================== Mapa (Leaflet) ====================== */
+
+.map-full {
+    height: 100%;
+    width: 100%;
+}
+
+/* Fuerza a que el contenedor del mapa ocupe todo el alto disponible */
+.map-page-body {
+    height: calc(100vh - 4rem);
+}
+
+.map-container-lg {
+    height: calc(100vh - 7rem);
+    min-height: 480px;
+}
+
+/* Popups de Leaflet con estilo CicleVibes */
+.leaflet-popup-content-wrapper {
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px;
+    font-family: 'Figtree', system-ui, sans-serif;
+    line-height: 1.4;
+}
+
+/* Marcadores personalizados */
+.cicle-marker {
+    border: 2px solid #ffffff;
+    border-radius: 9999px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cicle-marker--user {
+    background: #0d9488;
+}
+
+.cicle-marker--bike {
+    background: #059669;
+}
+
+.cicle-marker--point {
+    background: #f59e0b;
+}
+
+.cicle-marker--origin {
+    background: #16a34a;
+}
+
+.cicle-marker--dest {
+    background: #ef4444;
+}
+
+/* ====================== Navegación (tipo Waze) ====================== */
+
+/* Marco azul tipo navegación para la posición del ciclista */
+.cicle-marker--user.navigating .cicle-marker-pulse {
+    display: block;
+}
+
+.cicle-marker-pulse {
+    display: none;
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #0d9488;
+    animation: ciclePulse 2s infinite ease-out;
+}
+
+@keyframes ciclePulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(2.4);
+        opacity: 0;
+    }
+}
+
+/* Panel inferior de navegación (móvil) */
+.nav-danger {
+    background: linear-gradient(120deg, #dc2626, #ef4444);
+}
+
+.nav-route {
+    background: linear-gradient(120deg, #059669, #0f766e);
+}
+
+/* Aumenta altura del mapa en móvil (quita el header para jugar al Waze). */
+.map-container-lg {
+    height: calc(100vh - 7rem);
 }

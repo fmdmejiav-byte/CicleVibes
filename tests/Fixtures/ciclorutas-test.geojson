@@ -1,0 +1,67 @@
+{
+    "type": "FeatureCollection",
+    "_meta": {
+        "title": "Red de prueba de ciclorrutas (CiclorutaService)",
+        "description": "Fixture mínimo de tres segmentos conectados en Barranquilla para tests deterministas. No es dato oficial.",
+        "official_total_km": 0,
+        "osm_total_km_approx": 9.0
+    },
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Carrera 47",
+                "type": "ciclobanda",
+                "source": "test",
+                "osm_highway": "tertiary",
+                "osm_mode": "cycleway:left=lane",
+                "length_m": 2800
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [-74.81, 10.96],
+                    [-74.8, 10.97],
+                    [-74.79, 10.98]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Calle 44",
+                "type": "ciclorruta_calzada",
+                "source": "test",
+                "osm_highway": "cycleway",
+                "osm_mode": "",
+                "length_m": 2800
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [-74.79, 10.98],
+                    [-74.78, 10.99],
+                    [-74.77, 11.0]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "name": "Ciclovía Aislada",
+                "type": "carril_ciclo_preferente",
+                "source": "test",
+                "osm_highway": "secondary",
+                "osm_mode": "cycleway:both=shared_lane",
+                "length_m": 700
+            },
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [
+                    [-74.77, 10.96],
+                    [-74.76, 10.965]
+                ]
+            }
+        }
+    ]
+}

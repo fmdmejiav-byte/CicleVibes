@@ -1,0 +1,218 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\Maps\CiclorutaService;
+use App\Services\Maps\GeocodingService;
+use App\Services\Maps\MapService;
+use App\Services\Maps\OverpassService;
+use App\Services\Routing\BicycleRoutingService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+
+class MapController extends Controller
+{
+    public function __construct(
+        protected GeocodingService $geocoding,
+        protected BicycleRoutingService $routing,
+        protected MapService $map,
+        protected OverpassService $overpass,
+        protected CiclorutaService $ciclorutas,
+    ) {}
+
+    /**
+     * Muestra la página principal (navegación) de CicleVibes.
+     */
+    public function index(): View
+    {
+        return view('mapa', [
+            'mapConfig' => $this->map->config(),
+        ]);
+    }
+
+    /**
+     * Busca lugares mediante Nominatim.
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'max:150'],
+        ]);
+
+        return response()->json([
+            'results' => $this->geocoding->search($data['q']),
+        ]);
+    }
+
+    /**
+     * Devuelve la ruta recomendada (perfil de bicicleta).
+     */
+    public function route(Request $request): JsonResponse
+    {
+        $data = $this->routeCoordinates($request);
+
+        $route = $this->routing->recommended(
+            ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
+            ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']]
+        );
+
+        if ($route === null) {
+            return response()->json(['error' => 'No se pudo calcular la ruta para bicicleta.'], 422);
+        }
+
+        return response()->json(['route' => $route]);
+    }
+
+    /**
+     * Devuelve varias alternativas de ruta para bicicleta.
+     *
+     * Con priorize_ciclorutas=1 se antepone una ruta que recorre la red de
+     * ciclorrutas (conectando origen/destino con OSRM). Si la red no conecta,
+     * se devuelven únicamente las rutas directas de OSRM (fallback).
+     */
+    public function alternatives(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'origin_lat' => ['required', 'numeric', 'between:-90,90'],
+            'origin_lng' => ['required', 'numeric', 'between:-180,180'],
+            'dest_lat' => ['required', 'numeric', 'between:-90,90'],
+            'dest_lng' => ['required', 'numeric', 'between:-180,180'],
+            'count' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'priorize_ciclorutas' => ['nullable', 'boolean'],
+        ]);
+
+        $origin = ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']];
+        $destination = ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']];
+        $count = isset($data['count']) ? (int) $data['count'] : null;
+        $priority = filter_var($data['priorize_ciclorutas'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $routes = $priority
+            ? $this->routing->routesViaCiclorutas($origin, $destination, $count)
+            : $this->routing->routes($origin, $destination, $count);
+
+        if (empty($routes)) {
+            return response()->json(['error' => 'No se pudieron calcular rutas para bicicleta.'], 422);
+        }
+
+        // ¿Existe una conexión ciclista completa? Solo si el planificador fue
+        // capaz de anteponer una ruta que recorre la red de ciclorrutas.
+        $hasCiclorutaRoute = $priority && $this->routing->hasViaCiclorutas($routes);
+
+        if ($priority && ! $hasCiclorutaRoute) {
+            // Fallback honesto: sin conexión ciclista completa, OSRM se
+            // presenta como alternativa, no como ruta por ciclorrutas.
+            $routes[0]['label'] = '🛣️ Ruta alternativa';
+        }
+
+        return response()->json([
+            'routes' => $routes,
+            'priorize_ciclorutas' => $priority,
+            'cicloruta_connection' => $hasCiclorutaRoute,
+        ]);
+    }
+
+    /**
+     * Recalcula la ruta desde la posición actual del ciclista hasta el destino.
+     * Se usa durante la navegación cuando el usuario se desvía de la ruta.
+     */
+    public function recalculate(Request $request): JsonResponse
+    {
+        $data = $this->routeCoordinates($request);
+
+        $route = $this->routing->recommended(
+            ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
+            ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']]
+        );
+
+        if ($route === null) {
+            return response()->json(['error' => 'No se pudo recalcular la ruta.'], 422);
+        }
+
+        return response()->json(['route' => $route]);
+    }
+
+    /**
+     * Devuelve la infraestructura ciclista (ciclorutas) de un área como GeoJSON.
+     */
+    public function cyclorutas(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'min_lat' => ['required', 'numeric', 'between:-90,90'],
+            'min_lng' => ['required', 'numeric', 'between:-180,180'],
+            'max_lat' => ['required', 'numeric', 'between:-90,90'],
+            'max_lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        if ($data['min_lat'] >= $data['max_lat'] || $data['min_lng'] >= $data['max_lng']) {
+            return response()->json(['error' => 'Bounding box inválido.'], 422);
+        }
+
+        return response()->json(
+            $this->overpass->cyclorutas(
+                (float) $data['min_lat'],
+                (float) $data['min_lng'],
+                (float) $data['max_lat'],
+                (float) $data['max_lng']
+            )
+        );
+    }
+
+    /**
+     * Devuelve la red completa de ciclorrutas de Barranquilla como GeoJSON.
+     *
+     * Es la red local (resources/data/ciclorutas-barranquilla.geojson) usada
+     * por la capa "Ciclorutas" y por el planificador de rutas priorizadas.
+     */
+    public function ciclorutas(): JsonResponse
+    {
+        return response()->json($this->ciclorutas->network());
+    }
+
+    /**
+     * Devuelve la ciclorruta más cercana a unas coordenadas.
+     */
+    public function ciclorutasNearest(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $nearest = $this->ciclorutas->nearest(
+            (float) $data['lat'],
+            (float) $data['lng']
+        );
+
+        if ($nearest === null) {
+            return response()->json(['error' => 'No hay infraestructura ciclista registrada cerca.'], 404);
+        }
+
+        return response()->json(['nearest' => $nearest]);
+    }
+
+    /**
+     * Devuelve los marcadores de bicicletas disponibles.
+     */
+    public function bicicletas(): JsonResponse
+    {
+        return response()->json([
+            'bicicletas' => $this->map->bicicletasMarkers(),
+        ]);
+    }
+
+    /**
+     * Validación común de coordenadas de ruta.
+     *
+     * @return array<string, float>
+     */
+    protected function routeCoordinates(Request $request): array
+    {
+        return $request->validate([
+            'origin_lat' => ['required', 'numeric', 'between:-90,90'],
+            'origin_lng' => ['required', 'numeric', 'between:-180,180'],
+            'dest_lat' => ['required', 'numeric', 'between:-90,90'],
+            'dest_lng' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+    }
+}

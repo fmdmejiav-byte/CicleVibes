@@ -14,6 +14,8 @@ class Barrio extends Model
 
     protected $fillable = [
         'nombre',
+        'latitude',
+        'longitude',
     ];
 
     /**

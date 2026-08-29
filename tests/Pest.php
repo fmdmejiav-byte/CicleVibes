@@ -18,6 +18,11 @@ pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
     ->in('Feature');
 
+// Los tests unitarios también arrancan la app para poder usar config()
+// (CiclorutaService/BicycleRoutingService leen la configuración del servicio).
+pest()->extend(TestCase::class)
+    ->in('Unit');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

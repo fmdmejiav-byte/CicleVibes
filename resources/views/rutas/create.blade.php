@@ -1,237 +1,98 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-
-        <title>Planifica tu ruta — {{ config('app.name', 'CicleVibes') }}</title>
-
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />
-
-        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-            @vite(['resources/css/app.css', 'resources/js/ruta-planner.js'])
-        @endif
-    </head>
-
-    <body class="font-sans antialiased">
-        <div
-            id="ruta-planner"
-            data-map-key="{{ config('services.google_maps.key') }}"
-            class="flex h-screen flex-col bg-gray-100 md:flex-row">
-
-            <aside class="order-2 h-1/2 w-full shrink-0 overflow-y-auto md:order-1 md:h-full md:w-[360px] lg:w-[380px]">
-                <div class="m-3 flex min-h-full flex-col gap-4 rounded-2xl bg-white p-4 shadow-lg md:m-4 md:p-5">
-
-                    <div class="flex items-center justify-between">
-                        <a href="{{ route('rutas.index') }}" class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition hover:text-green-600">
-                            <x-icon name="arrow-right" class="h-3.5 w-3.5 rotate-180" />
-                            Mis rutas
-                        </a>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-600 text-white shadow-md">
-                            <x-icon name="map" class="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-wider text-green-700">CicleVibes</p>
-                            <h1 class="text-lg font-bold leading-tight text-gray-900">Planifica tu ruta</h1>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="relative">
-                            <x-icon name="map-pin" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-green-600" />
-                            <input
-                                id="origen-input"
-                                type="text"
-                                placeholder="Lugar de inicio"
-                                autocomplete="off"
-                                value="{{ old('origen') }}"
-                                class="w-full rounded-xl border-0 bg-gray-50 py-2.5 pl-9 pr-3 text-sm text-gray-800 shadow-sm ring-1 ring-inset ring-gray-200 transition placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-500" />
-                        </div>
-
-                        <div class="relative">
-                            <div class="absolute right-2 top-1/2 z-10 -translate-y-1/2">
-                                <button
-                                    id="btn-invertir"
-                                    type="button"
-                                    title="Invertir origen y destino"
-                                    class="flex h-7 w-7 items-center justify-center rounded-full bg-white text-gray-500 shadow ring-1 ring-gray-200 transition hover:text-green-600">
-                                    <x-icon name="arrows-right-left" class="h-4 w-4" />
-                                </button>
-                            </div>
-                            <x-icon name="map-pin" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-red-500" />
-                            <input
-                                id="destino-input"
-                                type="text"
-                                placeholder="Lugar de destino"
-                                autocomplete="off"
-                                value="{{ old('destino') }}"
-                                class="w-full rounded-xl border-0 bg-gray-50 py-2.5 pl-9 pr-10 text-sm text-gray-800 shadow-sm ring-1 ring-inset ring-gray-200 transition placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-green-500" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Tipo de ruta</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tipo-ruta" value="segura" checked class="peer sr-only" />
-                                <span class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-800">
-                                    <x-icon name="shield-check" class="h-4 w-4 shrink-0" />
-                                    Ruta segura para bicicletas
-                                </span>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tipo-ruta" value="rapida" class="peer sr-only" />
-                                <span class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-800">
-                                    <x-icon name="arrow-trending-up" class="h-4 w-4 shrink-0" />
-                                    Ruta más rápida
-                                </span>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tipo-ruta" value="trafico" class="peer sr-only" />
-                                <span class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-800">
-                                    <x-icon name="arrow-path" class="h-4 w-4 shrink-0" />
-                                    Evitar tráfico
-                                </span>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input type="radio" name="tipo-ruta" value="pendientes" class="peer sr-only" />
-                                <span class="flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 transition peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-800">
-                                    <x-icon name="map-pin" class="h-4 w-4 shrink-0" />
-                                    Evitar pendientes
-                                </span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button
-                        id="btn-buscar"
-                        type="button"
-                        class="flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white shadow-md transition hover:bg-green-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60">
-                        <x-icon name="magnifying-glass" class="h-4 w-4" />
-                        Buscar ruta
-                    </button>
-
-                    <p id="estado-ruta" class="min-h-4 text-center text-xs text-gray-500"></p>
-
-                    <div id="resumen" class="hidden space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Resumen</p>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                                <div class="flex items-center gap-1.5 text-gray-400">
-                                    <x-icon name="arrow-trending-up" class="h-3.5 w-3.5" />
-                                    <span class="text-[10px] font-semibold uppercase">Distancia</span>
-                                </div>
-                                <p id="resumen-distancia" class="mt-1 text-sm font-bold text-gray-900">—</p>
-                            </div>
-                            <div class="rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                                <div class="flex items-center gap-1.5 text-gray-400">
-                                    <x-icon name="clock" class="h-3.5 w-3.5" />
-                                    <span class="text-[10px] font-semibold uppercase">Tiempo estimado</span>
-                                </div>
-                                <p id="resumen-tiempo" class="mt-1 text-sm font-bold text-gray-900">—</p>
-                            </div>
-                            <div class="rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                                <div class="flex items-center gap-1.5 text-gray-400">
-                                    <x-icon name="shield-check" class="h-3.5 w-3.5" />
-                                    <span class="text-[10px] font-semibold uppercase">Nivel de seguridad</span>
-                                </div>
-                                <p id="resumen-seguridad" class="mt-1 text-sm font-bold text-gray-900">—</p>
-                            </div>
-                            <div class="rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                                <div class="flex items-center gap-1.5 text-gray-400">
-                                    <x-icon name="map-pin" class="h-3.5 w-3.5" />
-                                    <span class="text-[10px] font-semibold uppercase">Uso de infraestructura</span>
-                                </div>
-                                <p id="resumen-infra" class="mt-1 text-sm font-bold text-gray-900">—</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p id="mensaje-recomendacion" class="hidden rounded-xl px-3 py-2.5 text-xs font-medium"></p>
-
-                    <button
-                        id="btn-indicaciones"
-                        type="button"
-                        class="hidden items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
-                        <x-icon name="list-bullet" class="h-4 w-4" />
-                        Ver indicaciones paso a paso
-                    </button>
-
-                    <div id="panel-indicaciones" class="hidden max-h-60 overflow-y-auto rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                        <ol id="contenedor-indicaciones" class="list-none"></ol>
-                    </div>
-
-                    <div class="rounded-xl bg-gray-50 p-3 ring-1 ring-inset ring-gray-100">
-                        <label class="flex cursor-pointer items-center justify-between">
-                            <span class="text-xs font-semibold text-gray-700">Ciclorrutas de Barranquilla</span>
-                            <input id="mostrar-ciclorrutas" type="checkbox" checked class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500" />
-                        </label>
-                        <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1.5">
-                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                                <span class="h-2 w-4 rounded-full" style="background: #E23B2E;"></span>
-                                Ciclorruta en calzada
-                            </span>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                                <span class="h-2 w-4 rounded-full" style="background: #FF9500;"></span>
-                                Ciclorruta en andén
-                            </span>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                                <span class="h-2 w-4 rounded-full" style="background: #FFD400;"></span>
-                                Ciclobanda
-                            </span>
-                            <span class="inline-flex items-center gap-1 text-[10px] font-medium text-gray-500">
-                                <span class="h-2 w-4 rounded-full" style="background: #1E88E5;"></span>
-                                Carril preferente
-                            </span>
-                        </div>
-                    </div>
-
-                    <form
-                        id="form-ruta"
-                        action="{{ route('rutas.store') }}"
-                        method="POST"
-                        class="mt-1 border-t border-gray-100 pt-4">
-                        @csrf
-
-                        <input id="input-nombre" type="hidden" name="nombre" value="{{ old('nombre') }}">
-                        <input id="input-origen" type="hidden" name="origen" value="{{ old('origen') }}">
-                        <input id="input-destino" type="hidden" name="destino" value="{{ old('destino') }}">
-                        <input id="input-distancia" type="hidden" name="distancia" value="{{ old('distancia') }}">
-                        <input id="input-duracion" type="hidden" name="duracion" value="{{ old('duracion') }}">
-                        <input id="input-polilinea" type="hidden" name="polilinea" value="{{ old('polilinea') }}">
-
-                        @error('nombre')
-                            <p class="mb-2 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        @error('origen')
-                            <p class="mb-2 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        @error('destino')
-                            <p class="mb-2 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-
-                        <button
-                            id="btn-guardar"
-                            type="submit"
-                            disabled
-                            class="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-sm font-bold text-white shadow transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40">
-                            <x-icon name="check-circle" class="h-4 w-4" />
-                            Guardar ruta
-                        </button>
-                    </form>
-
-                </div>
-            </aside>
-
-            <div class="order-1 relative h-1/2 w-full md:order-2 md:h-full md:flex-1">
-                <div id="map" class="h-full w-full"></div>
-                <div id="leyenda-ciclorrutas" class="pointer-events-none absolute bottom-4 left-4 z-10 rounded-xl bg-white/95 px-3 py-2 shadow-lg ring-1 ring-gray-200 backdrop-blur"></div>
+﻿<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-extrabold leading-tight text-gray-900">Registrar nueva ruta</h2>
+                <p class="mt-0.5 text-sm text-gray-500">Completa los datos para crear tu recorrido.</p>
             </div>
+            <a href="{{ route('rutas.index') }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-emerald-300 hover:text-emerald-600">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>
+                Mis rutas
+            </a>
         </div>
-    </body>
-</html>
+    </x-slot>
+
+    <div class="py-8">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
+            <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-8" x-data="{ loading: false }">
+                <!-- Encabezado del formulario -->
+                <div class="flex items-center gap-3 border-b border-gray-100 pb-5">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3"></circle><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"></path><circle cx="18" cy="5" r="3"></circle></svg>
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">Datos de la ruta</h3>
+                        <p class="text-sm text-gray-500">Todos los campos marcados con * son obligatorios.</p>
+                    </div>
+                </div>
+
+                @if ($errors->any())
+                    <div class="mt-5 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3.5 text-sm text-red-700 animate-fade-in">
+                        <svg class="mt-0.5 h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path></svg>
+                        <p class="font-medium">Revisa los campos marcados para continuar.</p>
+                    </div>
+                @endif
+
+                <form action="{{ route('rutas.store') }}" method="POST" class="mt-6" @submit="loading = true">
+                    @csrf
+
+                    @include('rutas._form')
+
+                    <!-- Acciones -->
+                    <div class="mt-8 flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-end">
+                        <a href="{{ route('rutas.index') }}" class="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                            Cancelar
+                        </a>
+                        <button type="submit" :disabled="loading" class="group inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70">
+                            <span x-show="!loading" class="inline-flex items-center gap-2">
+                                Guardar ruta
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"></path><path d="M17 21v-8H7v8M7 3v5h8"></path></svg>
+                            </span>
+                            <span x-show="loading" x-cloak class="inline-flex items-center gap-2">
+                                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path></svg>
+                                GuardandoÔÇª
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Vista previa del mapa (Leaflet + OpenStreetMap) -->
+            <div class="mt-8 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                <div class="flex items-center gap-3 border-b border-gray-100 bg-slate-50/70 px-6 py-4">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-100 text-teal-600">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                    </span>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Vista previa del mapa</h3>
+                        <p class="text-sm text-gray-500">Ubicaci├│n de referencia en Barranquilla.</p>
+                    </div>
+                </div>
+                <div id="ruta-map" class="w-full bg-gray-100" style="height: 420px;"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const element = document.getElementById('ruta-map');
+            if (!element || typeof L === 'undefined') return;
+
+            const map = L.map('ruta-map', {
+                center: [{{ config('services.map.default_lat') }}, {{ config('services.map.default_lng') }}],
+                zoom: {{ config('services.map.default_zoom') }},
+            });
+
+            L.tileLayer('{{ config('services.map.tiles_url') }}', {
+                maxZoom: {{ config('services.map.tiles_max_zoom') }},
+                attribution: '{!! config('services.map.tiles_attribution') !!}',
+            }).addTo(map);
+
+            L.marker([{{ config('services.map.default_lat') }}, {{ config('services.map.default_lng') }}])
+                .addTo(map)
+                .bindPopup('<strong>Barranquilla</strong><br>Zona de referencia para tus rutas.');
+        });
+    </script>
+</x-app-layout>

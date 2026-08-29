@@ -1,0 +1,51 @@
+# ===== CicleVibes - .dockerignore =====
+# Excluye del contexto de Docker lo que no debe entrar en la imagen.
+
+# --- Sensible / entorno ---
+.env
+.env.*
+!.env.example
+auth.json
+*.pem
+*.key
+# --- Dependencias (se instalan en la imagen) ---
+node_modules
+vendor
+public/build
+public/hot
+# --- Git y VCS ---
+.git
+.gitignore
+.gitattributes
+# --- Logs y archivos temporales ---
+*.log
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/framework/testing/*
+storage/*.key
+/tmp
+# --- Idiomas / herramientas ---
+.phpunit.cache
+.phpunit.result.cache
+.phpactor.json
+.php-cs-fixer.cache
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+Homestead.json
+Homestead.yaml
+Thumbs.db
+.DS_Store
+# --- Scripts de desarrollo / análisis no necesarios en producción ---
+build_red_fase3.py
+# --- Docker ---
+# docker-entrypoint.sh se mantiene DENTRO del contexto (lo usa el entrypoint).
+Dockerfile*
+Dockerfile.*
+.dockerignore
+# --- Pruebas: se excluyen para reducir el contexto; no se ejecutan en prod ---
+tests

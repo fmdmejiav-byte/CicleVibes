@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // CicleVibes se sirve detrás del proxy de Render (HTTPS). Confiar en
+        // todos los proxies permite a Laravel ver el esquema/host reales
+        // (X-Forwarded-*) y generar URLs HTTPS correctas.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

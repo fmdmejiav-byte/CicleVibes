@@ -72,7 +72,8 @@ chmod -R u+rwX,go+rX /var/www/html 2>/dev/null || true
 if [ -n "${MYSQL_SSL_CA:-}" ]; then
     CA_FILE="/tmp/ciclevibes-mysql-ca.pem"
     printf '%s\n' "$MYSQL_SSL_CA" > "$CA_FILE"
-    chmod 600 "$CA_FILE"
+    chown www-data:www-data "$CA_FILE"
+    chmod 644 "$CA_FILE"
     export MYSQL_ATTR_SSL_CA="$CA_FILE"
     # Más seguro: verifica el certificado del servidor contra esta CA.
     export MYSQL_ATTR_SSL_VERIFY_SERVER_CERT="${MYSQL_ATTR_SSL_VERIFY_SERVER_CERT:-true}"

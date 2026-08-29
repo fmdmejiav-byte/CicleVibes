@@ -12,19 +12,38 @@ echo "[entrypoint] Iniciando CicleVibes en producción..."
 
 # ---------------------------------------------------------------------------
 # 1) Puerto dinámico de Render (variable de entorno PORT).
-#    Apache está configurado para escuchar en 8080 como plantilla; aquí se
-#    reemplaza por el puerto real que Render asigna ($PORT).
+#    Apache debe escuchar en 0.0.0.0:$PORT. Se usa el mecanismo oficial del
+#    contenedor (APACHE_HTTP_PORT) para que Apache no lo reinicie, y se genera
+#    de forma autoritativa el vhost de Laravel apuntando a public/.
 # ---------------------------------------------------------------------------
 PORT="${PORT:-8080}"
-echo "[entrypoint] Configurando Apache para escuchar en 0.0.0.0:${PORT}"
+export APACHE_HTTP_PORT="$PORT"
+echo "[entrypoint] Apache escuchando en 0.0.0.0:${PORT} (APACHE_HTTP_PORT=${APACHE_HTTP_PORT})"
 
-if [ -f /etc/apache2/ports.conf ]; then
-    sed -i "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
-fi
+# Genera el vhost de Laravel con el puerto resuelto, DocumentRoot correcto y
+# acceso permitido. Esto evita el 403 por DocumentRoot incorrecto y el
+# desajuste de puerto al reiniciar Apache.
+cat > /etc/apache2/sites-available/000-default.conf <<EOF
+<VirtualHost *:${PORT}>
+    ServerAdmin webmaster@localhost
+    ServerName localhost
 
-if [ -f /etc/apache2/sites-available/000-default.conf ]; then
-    sed -i "s/:8080>/${PORT}>/" /etc/apache2/sites-available/000-default.conf || true
-fi
+    DocumentRoot /var/www/html/public
+
+    <Directory /var/www/html/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/error.log
+    CustomLog \${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
+
+# Listen con el puerto resuelto (y asegura que el vhost esté habilitado).
+sed -i "s/^Listen .*/Listen ${PORT}/" /etc/apache2/ports.conf
+a2ensite 000-default.conf >/dev/null 2>&1 || true
 
 # ---------------------------------------------------------------------------
 # 2) Permisos y estructura de storage/ y bootstrap/cache.
@@ -38,6 +57,11 @@ mkdir -p storage/app \
 
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+
+# Permisos del DocumentRoot para que Apache (www-data) pueda leer y ejecutar
+# el front controller (/var/www/html/public/index.php) y el resto del código.
+chown -R www-data:www-data /var/www/html 2>/dev/null || true
+chmod -R u+rwX,go+rX /var/www/html 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 2bis) Certificado CA de MySQL (Aiven) con TLS/SSL, sin exponerlo en el repo.

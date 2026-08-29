@@ -59,18 +59,35 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
+            'options' => (function () {
+                if (! extension_loaded('pdo_mysql')) {
+                    return [];
+                }
+
                 // Cifrado TLS/SSL de la conexión MySQL (p. ej. Aiven).
-                // Cuando se define MYSQL_ATTR_SSL_CA se indica la ruta del
-                // certificado CA (escrito en el contenedor por docker-entrypoint.sh
-                // a partir de la variable secreta MYSQL_SSL_CA de Render).
-                // Verificación del certificado del servidor contra esa CA.
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) =>
-                    env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
-                        ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
-                        : null,
-            ]) : [],
+                // El entrypoint materializa el CA en /tmp/ciclevibes-mysql-ca.pem y
+                // expone su ruta mediante MYSQL_ATTR_SSL_CA. Solo se activa TLS si
+                // existe una ruta de CA real; en caso contrario se evita intentar
+                // un SSL sin CA (que mysqlnd reporta como "Cannot connect using SSL").
+                $sslCa = env('MYSQL_ATTR_SSL_CA');
+
+                if (empty($sslCa)) {
+                    return [];
+                }
+
+                $options = [
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => $sslCa,
+                ];
+
+                // Verificación del certificado del servidor contra esa CA (Aiven).
+                $verify = env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT');
+                if ($verify !== null && $verify !== '') {
+                    $options[(PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT)]
+                        = filter_var($verify, FILTER_VALIDATE_BOOLEAN);
+                }
+
+                return $options;
+            })(),
         ],
 
         'mariadb' => [
@@ -88,13 +105,29 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) =>
-                    env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
-                        ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
-                        : null,
-            ]) : [],
+            'options' => (function () {
+                if (! extension_loaded('pdo_mysql')) {
+                    return [];
+                }
+
+                $sslCa = env('MYSQL_ATTR_SSL_CA');
+
+                if (empty($sslCa)) {
+                    return [];
+                }
+
+                $options = [
+                    (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => $sslCa,
+                ];
+
+                $verify = env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT');
+                if ($verify !== null && $verify !== '') {
+                    $options[(PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT)]
+                        = filter_var($verify, FILTER_VALIDATE_BOOLEAN);
+                }
+
+                return $options;
+            })(),
         ],
 
         'pgsql' => [

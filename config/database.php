@@ -60,7 +60,16 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
+                // Cifrado TLS/SSL de la conexión MySQL (p. ej. Aiven).
+                // Cuando se define MYSQL_ATTR_SSL_CA se indica la ruta del
+                // certificado CA (escrito en el contenedor por docker-entrypoint.sh
+                // a partir de la variable secreta MYSQL_SSL_CA de Render).
+                // Verificación del certificado del servidor contra esa CA.
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) =>
+                    env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
+                        ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
+                        : null,
             ]) : [],
         ],
 
@@ -81,6 +90,10 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_VERIFY_SERVER_CERT : PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT) =>
+                    env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
+                        ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
+                        : null,
             ]) : [],
         ],
 

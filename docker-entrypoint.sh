@@ -40,6 +40,24 @@ chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
+# 2bis) Certificado CA de MySQL (Aiven) con TLS/SSL, sin exponerlo en el repo.
+#   Render inyecta el contenido del ca.pem en la variable SECRETA MYSQL_SSL_CA
+#   (PEM multilínea). Aquí se materializa en un fichero temporal y se expone
+#   la ruta a Laravel/PDO mediante MYSQL_ATTR_SSL_CA.
+# ---------------------------------------------------------------------------
+if [ -n "${MYSQL_SSL_CA:-}" ]; then
+    CA_FILE="/tmp/ciclevibes-mysql-ca.pem"
+    printf '%s\n' "$MYSQL_SSL_CA" > "$CA_FILE"
+    chmod 600 "$CA_FILE"
+    export MYSQL_ATTR_SSL_CA="$CA_FILE"
+    # Más seguro: verifica el certificado del servidor contra esta CA.
+    export MYSQL_ATTR_SSL_VERIFY_SERVER_CERT="${MYSQL_ATTR_SSL_VERIFY_SERVER_CERT:-true}"
+    echo "[entrypoint] Certificado CA de MySQL escrito en ${CA_FILE} (MYSQL_ATTR_SSL_CA activo)."
+else
+    echo "[entrypoint] MYSQL_SSL_CA no definido; conexión MySQL sin CA SSL explícita (p. ej. local)."
+fi
+
+# ---------------------------------------------------------------------------
 # 3) Cachés de Laravel (solo si hay clave de aplicación definida y el
 #    directorio bootstrap/cache es escribible). Se usa '|| echo' para que un
 #    fallo puntual (p. ej. route:cache con cierres) no aborte el arranque.

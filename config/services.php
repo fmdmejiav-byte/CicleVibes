@@ -49,13 +49,14 @@ return [
     | cambiando estas variables de entorno.
     */
     'map' => [
-        'provider' => env('MAP_PROVIDER', 'openstreetmap'),
+        'provider' => env('MAP_PROVIDER', 'carto'),
 
-        // URL de tiles de OpenStreetMap (huevos cartográficos)
-        'tiles_url' => env('MAP_TILES_URL', 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        // Tiles oscuros (por defecto) para integrar el mapa con el tema dark
+        // de la aplicación. Sustituible por cualquier proveedor vía .env.
+        'tiles_url' => env('MAP_TILES_URL', 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'),
         'tiles_attribution' => env(
             'MAP_TILES_ATTRIBUTION',
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         ),
         'tiles_max_zoom' => (int) env('MAP_TILES_MAX_ZOOM', 19),
 

@@ -6,7 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'CicleVibes') }} - Pedalea a tu propia vibra</title>
 
-        <meta name="theme-color" content="#0d9488">
+        <meta name="theme-color" content="#030a08">
         <meta name="description" content="CicleVibes: planifica y navega rutas en bicicleta por Barranquilla con perfil ciclista, ciclorrutas y navegación paso a paso.">
 
         <!-- Favicons -->
@@ -15,61 +15,48 @@
         <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
-
-        <style>
-            .hero-bg {
-                background-image:
-                    radial-gradient(circle at 15% 20%, rgba(16,185,129,0.18) 0%, transparent 40%),
-                    radial-gradient(circle at 85% 25%, rgba(5,150,105,0.14) 0%, transparent 45%),
-                    radial-gradient(circle at 50% 90%, rgba(16,185,129,0.10) 0%, transparent 50%);
-            }
-            .road-dash {
-                background-image: linear-gradient(to right, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 50%, transparent 50%, transparent 100%);
-                background-size: 24px 3px;
-                background-repeat: repeat-x;
-                background-position: bottom;
-            }
-        </style>
     </head>
-    <body class="font-sans bg-white text-gray-900 antialiased">
+    <body class="font-sans bg-[#030a08] text-[#f1fff9] antialiased">
         <!-- Navbar -->
-        <header class="sticky top-0 z-50 border-b border-emerald-100/60 bg-white/80 backdrop-blur-md">
+        <header class="sticky top-0 z-50 border-b border-[rgba(0,255,136,0.14)] bg-[#061412]/72 backdrop-blur-xl">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
                 <a href="/" class="flex items-center gap-2.5">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#00ff88,#00b3a0)] text-[#02140d] shadow-[0_0_18px_rgba(0,255,136,0.35)]">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle>
                             <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
                         </svg>
                     </span>
-                    <span class="text-xl font-extrabold tracking-tight">CicleVibes</span>
+                    <span class="text-xl font-extrabold tracking-tight text-[#f1fff9]">
+                        Cicle<span class="text-[#00ff88] drop-shadow-[0_0_10px_rgba(0,255,136,0.5)]">Vibes</span>
+                    </span>
                 </a>
 
-                <nav class="hidden items-center gap-6 text-sm font-medium text-gray-600 sm:flex">
-                    <a href="#caracteristicas" class="hover:text-emerald-600">Características</a>
-                    <a href="#como-funciona" class="hover:text-emerald-600">Cómo funciona</a>
-                    <a href="#comunidad" class="hover:text-emerald-600">Comunidad</a>
+                <nav class="hidden items-center gap-6 text-sm font-semibold text-[#a7b8b2] sm:flex">
+                    <a href="#caracteristicas" class="transition hover:text-[#00ff88]">Características</a>
+                    <a href="#como-funciona" class="transition hover:text-[#00ff88]">Cómo funciona</a>
+                    <a href="#comunidad" class="transition hover:text-[#00ff88]">Comunidad</a>
                 </nav>
 
                 <div class="flex items-center gap-3">
                     @auth
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                        <a href="{{ route('dashboard') }}" class="cv-neon-button !px-5 !py-2.5 !text-sm">
                             Ir al panel
                             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
                         </a>
                     @else
                         @if (Route::has('login'))
-                            <a href="{{ route('login') }}" class="hidden rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:text-emerald-600 sm:inline-flex">
+                            <a href="{{ route('login') }}" class="hidden rounded-lg px-4 py-2 text-sm font-semibold text-[#a7b8b2] transition hover:text-[#00ff88] sm:inline-flex">
                                 Iniciar sesión
                             </a>
                         @endif
                         @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+                            <a href="{{ route('register') }}" class="cv-neon-button !px-5 !py-2.5 !text-sm">
                                 Crear cuenta
                             </a>
                         @endif
@@ -80,35 +67,38 @@
 
         <main>
             <!-- Hero -->
-            <section class="hero-bg relative overflow-hidden">
+            <section class="cv-bg relative overflow-hidden">
+                <div class="pointer-events-none absolute -top-24 -left-24 h-80 w-80 rounded-full bg-[#00ff88]/10 blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-28 -right-16 h-96 w-96 rounded-full bg-[#00e5ff]/10 blur-3xl"></div>
+
                 <div class="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-2 lg:items-center lg:py-28">
                     <div class="animate-fade-in-up">
-                        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse-soft"></span>
+                        <span class="cv-badge">
+                            <span class="h-2 w-2 rounded-full bg-[#00ff88] animate-pulse-soft"></span>
                             Tu comunidad ciclista local
                         </span>
-                        <h1 class="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-5xl">
+                        <h1 class="mt-5 text-4xl font-black leading-tight tracking-tight text-[#f1fff9] sm:text-5xl">
                             Pedalea por tu ciudad
-                            <span class="text-emerald-600">a tu propia vibra.</span>
+                            <span class="cv-neon-green cv-text-glow">a tu propia vibra.</span>
                         </h1>
-                        <p class="mt-5 max-w-xl text-lg text-gray-600">
-                            Descubre rutas seguras, registra tu bicicleta y conecta con otros ciclistas de tu barrio. Todo en un solo lugar.
+                        <p class="mt-5 max-w-xl text-lg leading-relaxed text-[#a7b8b2]">
+                            Rutas para bicicleta, ciclorrutas priorizadas y navegación paso a paso en Barranquilla. Todo en un solo lugar.
                         </p>
                         <div class="mt-8 flex flex-wrap items-center gap-4">
                             @auth
-                                <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700">
+                                <a href="{{ route('dashboard') }}" class="cv-neon-button">
                                     Explorar mi panel
                                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
                                 </a>
                             @else
                                 @if (Route::has('register'))
-                                    <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:bg-emerald-700">
+                                    <a href="{{ route('register') }}" class="cv-neon-button">
                                         Empezar gratis
                                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>
                                     </a>
                                 @endif
                                 @if (Route::has('login'))
-                                    <a href="{{ route('login') }}" class="rounded-xl border border-gray-300 px-6 py-3.5 text-sm font-semibold text-gray-700 transition hover:border-emerald-300 hover:text-emerald-600">
+                                    <a href="{{ route('login') }}" class="cv-neon-ghost">
                                         Ya tengo cuenta
                                     </a>
                                 @endif
@@ -116,42 +106,51 @@
                         </div>
                         <div class="mt-10 flex items-center gap-8">
                             <div>
-                                <p class="text-2xl font-extrabold text-gray-900">34+</p>
-                                <p class="text-sm text-gray-500">Rutas locales</p>
+                                <p class="text-2xl font-extrabold text-[#00ff88]">34+</p>
+                                <p class="text-sm text-[#a7b8b2]">Rutas locales</p>
                             </div>
-                            <div class="h-10 w-px bg-gray-200"></div>
+                            <div class="h-10 w-px bg-[rgba(0,255,136,0.15)]"></div>
                             <div>
-                                <p class="text-2xl font-extrabold text-gray-900">22</p>
-                                <p class="text-sm text-gray-500">Bicicletas registradas</p>
+                                <p class="text-2xl font-extrabold text-[#00e5ff]">40+ km</p>
+                                <p class="text-sm text-[#a7b8b2]">de ciclorrutas</p>
                             </div>
-                            <div class="h-10 w-px bg-gray-200"></div>
+                            <div class="h-10 w-px bg-[rgba(0,255,136,0.15)]"></div>
                             <div>
-                                <p class="text-2xl font-extrabold text-gray-900">100%</p>
-                                <p class="text-sm text-gray-500">Gratis</p>
+                                <p class="text-2xl font-extrabold text-[#f1fff9]">100%</p>
+                                <p class="text-sm text-[#a7b8b2]">Gratis</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Hero illustration -->
                     <div class="relative hidden lg:block">
-                        <div class="absolute -inset-4 rounded-3xl bg-gradient-to-br from-emerald-200/50 to-teal-200/40 blur-2xl"></div>
-                        <div class="relative rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-800 p-10 shadow-2xl shadow-emerald-900/20">
-                            <svg class="mx-auto h-72 w-72 text-white/95 animate-float" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/>
-                                <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/>
+                        <div class="absolute -inset-4 rounded-3xl bg-[rgba(0,255,136,0.08)] blur-2xl"></div>
+                        <div class="cv-card relative p-10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                            <!-- ruta de fondo -->
+                            <svg class="pointer-events-none absolute inset-x-10 top-0 h-full w-[calc(100%-5rem)] text-[#00e5ff]/20" viewBox="0 0 200 260" fill="none" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M20 240 C 60 200, 40 150, 100 130 S 170 60, 180 20" stroke="currentColor" stroke-width="2.5" stroke-dasharray="3 8" stroke-linecap="round" />
                             </svg>
-                            <div class="mt-6 space-y-3">
-                                <div class="flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-300/20 text-lime-300">1</span>
-                                    <span class="text-sm text-emerald-50">Crea tu cuenta en segundos</span>
-                                </div>
-                                <div class="flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-300/20 text-lime-300">2</span>
-                                    <span class="text-sm text-emerald-50">Explora y guarda rutas</span>
-                                </div>
-                                <div class="flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-lime-300/20 text-lime-300">3</span>
-                                    <span class="text-sm text-emerald-50">Registra tu bicicleta</span>
+                            <div class="relative flex flex-col items-center">
+                                <span class="flex h-20 w-20 items-center justify-center rounded-full border border-[rgba(0,229,255,0.35)] bg-[rgba(0,229,255,0.1)] text-[#00e5ff] shadow-[0_0_24px_rgba(0,229,255,0.25)] animate-float">
+                                    <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle>
+                                        <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
+                                    </svg>
+                                </span>
+
+                                <div class="mt-8 w-full space-y-3">
+                                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(0,255,136,0.18)] bg-[rgba(9,24,20,0.7)] p-3 backdrop-blur-sm">
+                                        <span class="cv-step-num">1</span>
+                                        <span class="text-sm font-semibold text-[#f1fff9]">Explora rutas para bicicleta</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(0,255,136,0.18)] bg-[rgba(9,24,20,0.7)] p-3 backdrop-blur-sm">
+                                        <span class="cv-step-num">2</span>
+                                        <span class="text-sm font-semibold text-[#f1fff9]">Prioriza ciclorrutas en tu trayecto</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 rounded-xl border border-[rgba(0,255,136,0.18)] bg-[rgba(9,24,20,0.7)] p-3 backdrop-blur-sm">
+                                        <span class="cv-step-num">3</span>
+                                        <span class="text-sm font-semibold text-[#f1fff9]">Navega con indicaciones paso a paso</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -160,35 +159,35 @@
             </section>
 
             <!-- Features -->
-            <section id="caracteristicas" class="border-t border-gray-100 bg-gray-50/60">
+            <section id="caracteristicas" class="border-t border-[rgba(0,255,136,0.12)] bg-[#061412]">
                 <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8">
                     <div class="max-w-2xl">
-                        <span class="text-sm font-bold uppercase tracking-widest text-emerald-600">Características</span>
-                        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Todo lo que necesitas para rodar seguro</h2>
-                        <p class="mt-4 text-gray-600">CicleVibes reúne las herramientas esenciales de la movilidad urbana en bicicleta.</p>
+                        <span class="text-sm font-bold uppercase tracking-widest text-[#00ff88]">Características</span>
+                        <h2 class="mt-3 text-3xl font-black tracking-tight text-[#f1fff9] sm:text-4xl">Todo lo que necesitas para rodar seguro</h2>
+                        <p class="mt-4 text-[#a7b8b2]">CicleVibes reúne las herramientas esenciales de la movilidad urbana en bicicleta.</p>
                     </div>
 
                     <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                         @php
                             $features = [
-                                ['Rutas seguras', 'Explora recorridos recomendados por la comunidad para llegar a tu destino.'],
-                                ['Registro de bicicletas', 'Lleva un historial de tu bicicleta y sus características.'],
-                                ['Reportes de barrio', 'Avisa y conoce incidentes en tu zona para rodar con precaución.'],
-                                ['Favoritos', 'Guarda tus rutas preferidas y accede a ellas rápidamente.'],
+                                ['Rutas seguras', 'Recorridos calculados para bicicleta, con perfil ciclista y tiempos realistas.'],
+                                ['Ciclorrutas priorizadas', 'Activa el modo ciclorrutas y elige el trayecto que más las aproveche.'],
+                                ['Navegación paso a paso', 'Indicaciones claras mientras ruedas, con recálculo automático si te desvías.'],
+                                ['Búsqueda de destinos', 'Encuentra cualquier lugar de Barranquilla y planifica al instante.'],
                                 ['Comunidad', 'Comparte publicaciones y comenta con otros ciclistas.'],
-                                ['Notificaciones', 'Mantente al tanto de lo que ocurre en tu comunidad.'],
+                                ['Gratis', 'Sin costos ocultos: todo lo esencial para moverte sobre dos ruedas.'],
                             ];
                         @endphp
                         @foreach ($features as $feature)
-                            <div class="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                                <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition group-hover:bg-emerald-600 group-hover:text-white">
+                            <div class="cv-card cv-card-hover group p-6">
+                                <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-[rgba(0,255,136,0.25)] bg-[rgba(0,255,136,0.1)] text-[#00ff88] transition group-hover:shadow-[0_0_18px_rgba(0,255,136,0.4)]">
                                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                         <circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle>
                                         <path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
                                     </svg>
                                 </span>
-                                <h3 class="mt-4 text-lg font-bold text-gray-900">{{ $feature[0] }}</h3>
-                                <p class="mt-1.5 text-sm text-gray-600">{{ $feature[1] }}</p>
+                                <h3 class="mt-4 text-lg font-bold text-[#f1fff9]">{{ $feature[0] }}</h3>
+                                <p class="mt-1.5 text-sm text-[#a7b8b2]">{{ $feature[1] }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -196,26 +195,26 @@
             </section>
 
             <!-- How it works -->
-            <section id="como-funciona" class="bg-white">
+            <section id="como-funciona" class="bg-[#030a08]">
                 <div class="mx-auto max-w-7xl px-5 py-20 sm:px-8">
                     <div class="max-w-2xl">
-                        <span class="text-sm font-bold uppercase tracking-widest text-emerald-600">Cómo funciona</span>
-                        <h2 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Empieza en tres simples pasos</h2>
+                        <span class="text-sm font-bold uppercase tracking-widest text-[#00e5ff]">Cómo funciona</span>
+                        <h2 class="mt-3 text-3xl font-black tracking-tight text-[#f1fff9] sm:text-4xl">Empieza en tres simples pasos</h2>
                     </div>
 
                     <div class="mt-12 grid gap-8 md:grid-cols-3">
                         @php
                             $steps = [
                                 [1, 'Crea tu cuenta', 'Regístrate con tu correo y contraseña. Es gratis y no necesita configuración.'],
-                                [2, 'Registra tu bici', 'Agrega tu bicicleta con sus datos para tenerla siempre a mano.'],
-                                [3, 'Explora y rueda', 'Descubre rutas, guárdalas en favoritos y conecta con la comunidad.'],
+                                [2, 'Define tu recorrido', 'Señala origen y destino, y prioriza ciclorrutas si lo deseas.'],
+                                [3, 'Explora y rueda', 'Elige tu alternativa y navega con indicaciones paso a paso.'],
                             ];
                         @endphp
                         @foreach ($steps as $step)
-                            <div class="relative rounded-2xl border border-gray-100 bg-gray-50/60 p-7">
-                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-600 text-lg font-extrabold text-white shadow-lg shadow-emerald-600/25">{{ $step[0] }}</span>
-                                <h3 class="mt-5 text-xl font-bold text-gray-900">{{ $step[1] }}</h3>
-                                <p class="mt-2 text-sm leading-relaxed text-gray-600">{{ $step[2] }}</p>
+                            <div class="cv-card relative p-7">
+                                <span class="cv-step-num !h-12 !w-12 !text-lg">{{ $step[0] }}</span>
+                                <h3 class="mt-5 text-xl font-bold text-[#f1fff9]">{{ $step[1] }}</h3>
+                                <p class="mt-2 text-sm leading-relaxed text-[#a7b8b2]">{{ $step[2] }}</p>
                             </div>
                         @endforeach
                     </div>
@@ -223,22 +222,22 @@
             </section>
 
             <!-- CTA -->
-            <section id="comunidad" class="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800">
-                <div class="pointer-events-none absolute -top-20 -right-20 h-72 w-72 rounded-full bg-white/10"></div>
-                <div class="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-white/5"></div>
-                <div class="road-dash absolute inset-x-0 bottom-0 h-12"></div>
+            <section id="comunidad" class="relative overflow-hidden border-t border-[rgba(0,255,136,0.12)] bg-[linear-gradient(120deg,#04311f,#0b1e1a_60%,#03101b)]">
+                <div class="pointer-events-none absolute -top-20 -right-20 h-72 w-72 rounded-full bg-[#00ff88]/10 blur-3xl"></div>
+                <div class="pointer-events-none absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-[#00e5ff]/10 blur-3xl"></div>
+                <div class="absolute inset-x-0 bottom-0 h-px bg-[rgba(0,255,136,0.3)]"></div>
                 <div class="relative mx-auto max-w-4xl px-5 py-24 text-center sm:px-8">
-                    <h2 class="text-3xl font-black tracking-tight text-white sm:text-4xl">Únete a la comunidad ciclista de CicleVibes</h2>
-                    <p class="mx-auto mt-4 max-w-xl text-emerald-50/90">Crea tu cuenta hoy y empieza a descubrir todo lo que tu barrio tiene para ofrecer sobre dos ruedas.</p>
+                    <h2 class="text-3xl font-black tracking-tight text-[#f1fff9] sm:text-4xl">Únete a la comunidad ciclista de CicleVibes</h2>
+                    <p class="mx-auto mt-4 max-w-xl text-[#a7b8b2]">Crea tu cuenta hoy y empieza a descubrir todo lo que Barranquilla tiene para ofrecer sobre dos ruedas.</p>
                     <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
                         @auth
-                            <a href="{{ route('dashboard') }}" class="rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-emerald-700 shadow-lg transition hover:bg-emerald-50">Ir a mi panel</a>
+                            <a href="{{ route('dashboard') }}" class="cv-neon-button">Ir a mi panel</a>
                         @else
                             @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="rounded-xl bg-white px-7 py-3.5 text-sm font-bold text-emerald-700 shadow-lg transition hover:bg-emerald-50">Crear mi cuenta</a>
+                                <a href="{{ route('register') }}" class="cv-neon-button">Crear mi cuenta</a>
                             @endif
                             @if (Route::has('login'))
-                                <a href="{{ route('login') }}" class="rounded-xl border border-white/40 px-7 py-3.5 text-sm font-bold text-white transition hover:bg-white/10">Iniciar sesión</a>
+                                <a href="{{ route('login') }}" class="cv-neon-ghost">Iniciar sesión</a>
                             @endif
                         @endauth
                     </div>
@@ -246,17 +245,17 @@
             </section>
         </main>
 
-        <footer class="border-t border-gray-100 bg-gray-50/60">
+        <footer class="border-t border-[rgba(0,255,136,0.12)] bg-[#061412]">
             <div class="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row sm:px-8">
                 <div class="flex items-center gap-2">
-                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                    <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#00ff88,#00b3a0)] text-[#02140d]">
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path>
                         </svg>
                     </span>
-                    <span class="font-bold text-gray-900">CicleVibes</span>
+                    <span class="font-extrabold text-[#f1fff9]">CicleVibes</span>
                 </div>
-                <p class="text-sm text-gray-500">© {{ date('Y') }} CicleVibes. Pedalea a tu propia vibra.</p>
+                <p class="text-sm text-[#6f817a]">© {{ date('Y') }} CicleVibes. Pedalea a tu propia vibra.</p>
             </div>
         </footer>
     </body>

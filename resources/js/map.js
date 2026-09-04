@@ -29,7 +29,6 @@ function CicleMap(config) {
     let activeRouteLayer = null;
     let activeRouteCoords = [];
 
-    let bikeMarkersLayer = null;
     let cyclorutasLayer = null;
     let cyclorutasLoaded = false;
 
@@ -45,12 +44,20 @@ function CicleMap(config) {
     const iconSize = 34;
 
     // Estilos por tipo de infraestructura ciclo (tipología del mapa oficial
-    // de ciclorrutas de Barranquilla).
+    // de ciclorrutas de Barranquilla), recoloreados según la paleta neón
+    // del tema oscuro CicleVibes.
     const CICLORUTA_TYPES = {
-        ciclorruta_calzada: { label: 'Ciclorruta en calzada', color: '#dc2626', emoji: '🔴' },
-        ciclorruta_anden: { label: 'Ciclorruta en andén', color: '#ea580c', emoji: '🟠' },
-        ciclobanda: { label: 'Ciclobanda', color: '#ca8a04', emoji: '🟡' },
-        carril_ciclo_preferente: { label: 'Carril ciclo preferente', color: '#2563eb', emoji: '🔵' },
+        ciclorruta_calzada: { label: 'Ciclorruta en calzada', color: '#ff4d5a' },
+        ciclorruta_anden: { label: 'Ciclorruta en andén', color: '#ff9f43' },
+        ciclobanda: { label: 'Ciclobanda', color: '#ffd60a' },
+        carril_ciclo_preferente: { label: 'Carril ciclo preferente', color: '#00e5ff' },
+    };
+
+    // Glifos SVG (sin emojis): bici, cruce de ubicación y pin de mapa.
+    const ICONS = {
+        bike: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path></svg>',
+        user: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2"></path></svg>',
+        point: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>',
     };
 
     // Rutas GPS normales: solo recalculamos si el usuario lleva varios
@@ -100,6 +107,8 @@ function CicleMap(config) {
 
         map.on('click', onMapClick);
         map.on('moveend', throttledCyclorutasFetch);
+        map.on('zoomend', applyBikeDensity);
+        map.on('moveend', applyBikeDensity);
 
         loadBicicletas();
 
@@ -155,7 +164,7 @@ function CicleMap(config) {
 
     function placeTempMarker(latlng, title, subtitle) {
         if (clickTempMarker) clickTempMarker.remove();
-        clickTempMarker = L.marker(latlng, { icon: markerIcon('point', '📍') })
+        clickTempMarker = L.marker(latlng, { icon: markerIcon('point', ICONS.point) })
             .addTo(map)
             .bindPopup(`<strong>${title || 'Punto'}</strong>${subtitle ? `<br><small>${subtitle}</small>` : ''}`)
             .openPopup();
@@ -284,7 +293,7 @@ function CicleMap(config) {
         } else {
             const navigating = payload().navigating ? 'navigating' : '';
             userMarker = L.marker([lat, lng], {
-                icon: markerIcon('user', '🚴', navigating),
+                icon: markerIcon('user', ICONS.user, navigating),
                 zIndexOffset: 1000,
             }).addTo(map).bindPopup('Tu posición');
         }
@@ -390,23 +399,57 @@ function CicleMap(config) {
                 : [];
             const isSelected = route.id === app.selectedRouteId;
 
-            const layer = L.polyline(coords, isSelected
-                ? { color: '#0d9488', weight: 7, opacity: 0.95, lineJoin: 'round', lineCap: 'round' }
-                : { color: '#94a3b8', weight: 4, opacity: 0.6, dashArray: '6 8', lineJoin: 'round', lineCap: 'round' }
-            ).addTo(map);
-
-            alternativeLayers.push(layer);
+            const layers = buildRouteLayers(coords, isSelected);
+            layers.forEach((layer) => layer.addTo(map));
+            alternativeLayers.push(...layers);
 
             if (isSelected) {
-                activeRouteLayer = layer;
+                activeRouteLayer = layers[layers.length - 1];
                 activeRouteCoords = coords;
             }
         });
 
         if (activeRouteLayer) {
             const bounds = activeRouteLayer.getBounds();
-            map.fitBounds(bounds, { padding: [60, 60] });
+            map.fitBounds(bounds, { padding: [80, 80] });
         }
+    }
+
+    /**
+     * Construye las capas de una ruta:
+     *  - Activa: halo verde neón difuso + núcleo grueso (estilo premium).
+     *  - Alternativa: línea cian discontinua y atenuada para no competir.
+     */
+    function buildRouteLayers(coords, isSelected) {
+        if (!isSelected) {
+            return [
+                L.polyline(coords, {
+                    color: '#00e5ff',
+                    weight: 4.5,
+                    opacity: 0.4,
+                    dashArray: '1 10',
+                    lineJoin: 'round',
+                    lineCap: 'round',
+                }),
+            ];
+        }
+
+        const halo = L.polyline(coords, {
+            color: '#00ff88',
+            weight: 11,
+            opacity: 0.22,
+            lineJoin: 'round',
+            lineCap: 'round',
+        });
+        const core = L.polyline(coords, {
+            color: '#00ff88',
+            weight: 5.5,
+            opacity: 0.95,
+            lineJoin: 'round',
+            lineCap: 'round',
+        });
+
+        return [halo, core];
     }
 
     function selectAlternative(id) {
@@ -433,10 +476,21 @@ function CicleMap(config) {
 
         app.mode = 'navigating';
         app.navigating = true;
-        app.routeInfo = app.alternatives.find((r) => r.id === app.selectedRouteId) || null;
+
+        const chosenRoute = app.alternatives.find((r) => r.id === app.selectedRouteId) || null;
+        applyRouteFixes(chosenRoute);
+        app.routeInfo = chosenRoute;
+
+        const initialStats = routeStats(chosenRoute);
+        app.distanceRemainingKm = initialStats.distance_km > 0 ? initialStats.distance_km : null;
+        app.timeRemainingMin = initialStats.duration_min > 0 ? initialStats.duration_min : null;
+
         app.currentStep = 0;
         app.deviating = false;
         app.status = 'Navegación iniciada. Síguenos en el mapa.';
+
+        // Durante la navegación reducimos el ruido de bicicletas (zoom >= 17).
+        applyBikeDensity();
 
         if (originMarker) map.removeLayer(originMarker);
         if (destMarker) map.removeLayer(destMarker);
@@ -542,6 +596,7 @@ function CicleMap(config) {
             })
             .then((res) => {
                 const route = res.data.route;
+                applyRouteFixes(route);
                 app.routeInfo = route;
                 app.alternatives = [
                     { ...route, label: 'Ruta actualizada', id: route.id || 1 },
@@ -553,12 +608,15 @@ function CicleMap(config) {
                 app.mode = 'navigating';
 
                 const coords = route.coordinates.map((c) => [c[0], c[1]]);
-                activeRouteLayer = L.polyline(coords, { color: '#0d9488', weight: 7, opacity: 0.95, lineJoin: 'round', lineCap: 'round' }).addTo(map);
-                alternativeLayers.push(activeRouteLayer);
+                const layers = buildRouteLayers(coords, true);
+                layers.forEach((layer) => layer.addTo(map));
+                alternativeLayers.push(...layers);
+                activeRouteLayer = layers[layers.length - 1];
                 activeRouteCoords = coords;
 
-                app.distanceRemainingKm = route.distance_km;
-                app.timeRemainingMin = route.duration_min;
+                const stats = routeStats(route);
+                app.distanceRemainingKm = stats.distance_km;
+                app.timeRemainingMin = stats.duration_min;
                 app.currentStep = 0;
                 app.status = 'Ruta actualizada';
                 addToast('Ruta recalculada desde tu posición', 'success');
@@ -589,6 +647,8 @@ function CicleMap(config) {
         if (userAccuracyCircle) map.removeLayer(userAccuracyCircle);
         userMarker = null;
         userAccuracyCircle = null;
+
+        applyBikeDensity();
     }
 
     function confirmRecalculate() {
@@ -672,33 +732,136 @@ function CicleMap(config) {
         return { distanceMeters: best, index: bestIndex };
     }
 
+    // ------------------------- Resumen y consolidación de pasos -------------------------
+    /**
+     * Resumen real de una ruta: suma la distancia y el tiempo de todos sus
+     * tramos. Si el backend ya trae totales correctos ("distance_km" /
+     * "duration_min"), los respeta; si vienen en 0 (o no vienen), se
+     * reconstruyen a partir de los pasos. Así nunca se muestra "0 km / 1 min",
+     * y la primera indicación es coherente con el total del recorrido.
+     */
+    function routeStats(route) {
+        if (!route) return { distance_km: 0, duration_min: 0 };
+
+        let distKm = Number(route.distance_km);
+        let durMin = Number(route.duration_min);
+
+        let sumDistM = 0;
+        let sumDurS = 0;
+        (Array.isArray(route.steps) ? route.steps : []).forEach((s) => {
+            sumDistM += Number(s.distance_m) || 0;
+            sumDurS += Number(s.duration_seconds) || 0;
+        });
+
+        if (!(distKm > 0) && sumDistM > 0) {
+            distKm = Math.round((sumDistM / 1000) * 10) / 10;
+        }
+        if (!(durMin > 0) && sumDurS > 0) {
+            durMin = Math.max(1, Math.round(sumDurS / 60));
+        }
+
+        return { distance_km: distKm, duration_min: durMin };
+    }
+
+    /**
+     * Fusiona instrucciones consecutivas repetidas del mismo movimiento
+     * ("Continúa por Calle 47" × 4 → una sola indicación con la distancia total
+     * de todos los tramos).
+     */
+    function consolidateSteps(steps) {
+        if (!Array.isArray(steps) || steps.length < 2) return Array.isArray(steps) ? steps : [];
+
+        const out = [{ ...steps[0] }];
+        for (let i = 1; i < steps.length; i++) {
+            const prev = out[out.length - 1];
+            const cur = steps[i];
+            if (normalizedInstruction(prev.instruction) === normalizedInstruction(cur.instruction)) {
+                prev.distance_m = (Number(prev.distance_m) || 0) + (Number(cur.distance_m) || 0);
+                prev.duration_seconds = (Number(prev.duration_seconds) || 0) + (Number(cur.duration_seconds) || 0);
+            } else {
+                out.push({ ...cur });
+            }
+        }
+        return out;
+    }
+
+    /** Normaliza una instrucción; los números se reemplazan (Calle 47 ≈ Calle 44). */
+    function normalizedInstruction(inst) {
+        return String(inst || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/\d+/g, '#')
+            .trim();
+    }
+
+    /**
+     * Prepara una ruta para su consumo: consolida pasos repetidos y corrige
+     * distancia/duración con el resumen real.
+     */
+    function applyRouteFixes(route) {
+        if (!route) return;
+        if (Array.isArray(route.steps)) route.steps = consolidateSteps(route.steps);
+        const stats = routeStats(route);
+        route.distance_km = stats.distance_km;
+        route.duration_min = stats.duration_min;
+    }
+
     // ------------------------- Bicicletas -------------------------
+    let bikeMarkers = [];
+    let bikesVisible = true;
+
     function loadBicicletas() {
-        if (bikeMarkersLayer) map.removeLayer(bikeMarkersLayer);
-        bikeMarkersLayer = L.layerGroup().addTo(map);
+        bikeMarkers.forEach(({ marker }) => { if (map.hasLayer(marker)) map.removeLayer(marker); });
+        bikeMarkers = [];
 
         axios
             .get('/api/maps/bicicletas')
             .then((res) => {
                 const bikes = res.data.bicicletas || [];
-                bikes.forEach((bike) => {
-                    L.marker([bike.latitude, bike.longitude], { icon: markerIcon('bike', '🚲') })
-                        .addTo(bikeMarkersLayer)
+                bikeMarkers = bikes.map((bike) => {
+                    const marker = L.marker([bike.latitude, bike.longitude], { icon: markerIcon('bike', ICONS.bike) })
                         .bindPopup(`
-                            <div style="min-width:160px;">
-                                <strong style="color:#059669;">${bike.marca} ${bike.modelo}</strong><br>
-                                <span style="color:#666;">${bike.tipo}</span><br>
-                                <span>📍 ${bike.barrio}</span><br>
-                                <span style="font-size:12px;color:#888;">Dueño: ${bike.dueno}</span>
+                            <div style="min-width:170px;">
+                                <strong style="color:#00ff88;">${bike.marca} ${bike.modelo}</strong><br>
+                                <span style="color:#a7b8b2;">${bike.tipo}</span><br>
+                                <span style="color:#a7b8b2;">${bike.barrio}</span><br>
+                                <span style="font-size:12px;color:#6f817a;">Dueño: ${bike.dueno}</span>
                             </div>`);
+                    return { marker, latlng: [Number(bike.latitude), Number(bike.longitude)] };
                 });
+                applyBikeDensity();
             })
             .catch(() => { /* opcional */ });
     }
 
+    /**
+     * Reduce el ruido de marcadores según el contexto:
+     *  - Solo se dibujan a partir de zoom 14 (ciudad amplia → lienzo limpio).
+     *  - Durante la navegación se exige zoom >= 17 para no interferir con la ruta.
+     *  - Además solo se muestran los que están dentro de la vista actual.
+     */
+    function applyBikeDensity() {
+        if (!bikesVisible || !map) return;
+        const zoom = map.getZoom();
+        const bounds = map.getBounds();
+        const navigating = payload().navigating;
+        const minZoom = navigating ? 17 : 14;
+
+        bikeMarkers.forEach(({ marker, latlng }) => {
+            const visible = zoom >= minZoom && bounds.contains(latlng);
+            if (visible && !map.hasLayer(marker)) marker.addTo(map);
+            if (!visible && map.hasLayer(marker)) map.removeLayer(marker);
+        });
+    }
+
     function toggleBicicletas(show) {
-        if (!bikeMarkersLayer) return;
-        show ? map.addLayer(bikeMarkersLayer) : map.removeLayer(bikeMarkersLayer);
+        bikesVisible = show;
+        if (show) {
+            applyBikeDensity();
+        } else {
+            bikeMarkers.forEach(({ marker }) => { if (map.hasLayer(marker)) map.removeLayer(marker); });
+        }
     }
 
     // ------------------------- Ciclorutas (red de infraestructura ciclista) -------------------------
@@ -755,9 +918,9 @@ function CicleMap(config) {
             },
             onEachFeature: (feature, layer) => {
                 const p = feature?.properties || {};
-                const { label, emoji } = cyclorutaTypeInfo(p.type);
-                const name = [emoji, label, p.name ? ` · ${p.name}` : ''].filter(Boolean).join(' ');
-                if (name) layer.bindPopup(`<strong>Cicloruta</strong><br><span style="color:#666;">${name}</span>`);
+                const { label } = cyclorutaTypeInfo(p.type);
+                const name = [label, p.name ? ` · ${p.name}` : ''].filter(Boolean).join('');
+                if (name) layer.bindPopup(`<strong>Cicloruta</strong><br><span style="color:#a7b8b2;">${name}</span>`);
             },
         }).addTo(cyclorutasLayer);
     }
@@ -822,6 +985,7 @@ function CicleMap(config) {
 
         // Panel
         panelCollapsed: false,
+        legendOpen: true,
 
         // Rutas
         origin: null,
@@ -921,11 +1085,24 @@ function CicleMap(config) {
             const kmh = Math.round((route.distance_km / route.duration_min) * 60);
             return kmh > 0 ? `≈ ${kmh} km/h` : '—';
         },
+        routeStats,
+        toggleLegend() {
+            this.legendOpen = !this.legendOpen;
+        },
         originLabel(point) {
             return point ? (point.label || point.name || 'Punto seleccionado') : 'No definido';
         },
         destinationLabel(point) {
             return point ? (point.label || point.name || 'Punto seleccionado') : 'Define un destino';
+        },
+        selectedRoute() {
+            return this.alternatives.find((r) => r.id === this.selectedRouteId) || null;
+        },
+        formatDist(meters) {
+            const m = Number(meters) || 0;
+            if (m <= 0) return '';
+            if (m < 1000) return `${Math.round(m)} m`;
+            return `${Math.round(m / 100) / 10} km`;
         },
     };
 

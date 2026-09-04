@@ -19,19 +19,42 @@
     display: none !important;
 }
 
-/* Fondo decorativo de la identidad CicleVibes (mismo que la página de bienvenida). */
-.hero-bg {
-    background-image:
-        radial-gradient(circle at 15% 20%, rgba(16,185,129,0.18) 0%, transparent 40%),
-        radial-gradient(circle at 85% 25%, rgba(5,150,105,0.14) 0%, transparent 45%),
-        radial-gradient(circle at 50% 90%, rgba(16,185,129,0.10) 0%, transparent 50%);
-}
+/* ==========================================================================
+   Sistema de diseño CicleVibes — Dark / Neon / Glass
+   ========================================================================== */
 
-.road-dash {
-    background-image: linear-gradient(to right, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.5) 50%, transparent 50%, transparent 100%);
-    background-size: 24px 3px;
-    background-repeat: repeat-x;
-    background-position: bottom;
+:root {
+    --cv-bg-0: #030a08;
+    --cv-bg-1: #061412;
+    --cv-bg-2: #0b1e1a;
+
+    --cv-surface: rgba(15, 32, 28, 0.60);
+    --cv-surface-solid: #0b1e1a;
+    --cv-border: rgba(0, 255, 136, 0.20);
+    --cv-border-cyan: rgba(0, 229, 255, 0.25);
+    --cv-border-soft: rgba(103, 232, 179, 0.12);
+
+    --cv-green: #00ff88;
+    --cv-green-alt: #00e676;
+    --cv-cyan: #00e5ff;
+
+    --cv-text: #f1fff9;
+    --cv-text-2: #a7b8b2;
+    --cv-text-3: #6f817a;
+
+    --cv-red: #ff4d5a;
+    --cv-orange: #ff9f43;
+
+    --cv-glow-green: 0 0 20px rgba(0, 255, 136, 0.30);
+    --cv-glow-strong: 0 0 30px rgba(0, 255, 136, 0.45), 0 0 60px rgba(0, 255, 136, 0.12);
+    --cv-glow-cyan: 0 0 20px rgba(0, 229, 255, 0.25);
+
+    --cv-radius-card: 18px;
+    --cv-radius-panel: 24px;
+    --cv-radius-btn: 14px;
+    --cv-radius-input: 14px;
+
+    --cv-font: 'Inter', 'Manrope', 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 @layer base {
@@ -40,11 +63,295 @@
     }
 
     body {
+        font-family: var(--cv-font);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        background-color: var(--cv-bg-0);
+        color: var(--cv-text);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--cv-green);
+        outline-offset: 2px;
     }
 }
 
+/* Fondo atmosférico global (sutil, no discoteca) */
+.cv-bg {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(0, 255, 136, 0.08), transparent 32%),
+        radial-gradient(circle at 88% 18%, rgba(0, 229, 255, 0.06), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(0, 255, 136, 0.05), transparent 42%);
+    background-color: #030a08;
+}
+
+/* La versión integrada en el mapa: sin gradientes fuertes, negro profundo */
+.cv-bg-map {
+    background-color: var(--cv-bg-0);
+}
+
+@layer components {
+    /* ---------- Glassmorphism ---------- */
+    .cv-glass {
+        background: var(--cv-surface);
+        border: 1px solid var(--cv-border);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cv-glass-soft {
+        background: rgba(9, 24, 20, 0.72);
+        border: 1px solid var(--cv-border-soft);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .cv-card {
+        background: var(--cv-surface);
+        border: 1px solid var(--cv-border);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--cv-radius-card);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .cv-card--cyan {
+        border-color: var(--cv-border-cyan);
+    }
+
+    /* Microinteracción estándar de las cards */
+    .cv-card-hover {
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cv-card-hover:hover {
+        transform: translateY(-2px);
+        border-color: rgba(0, 255, 136, 0.5);
+        box-shadow: var(--cv-glow-green), 0 14px 34px rgba(0, 0, 0, 0.4);
+    }
+
+    .cv-card-hover--cyan:hover {
+        border-color: rgba(0, 229, 255, 0.5);
+        box-shadow: var(--cv-glow-cyan), 0 14px 34px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ---------- Botones ---------- */
+    .cv-neon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--cv-radius-btn);
+        background: linear-gradient(135deg, var(--cv-green), var(--cv-green-alt));
+        color: #02140d;
+        font-weight: 800;
+        padding: 0.85rem 1.4rem;
+        border: 1px solid transparent;
+        box-shadow: var(--cv-glow-green);
+        transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+        cursor: pointer;
+    }
+
+    .cv-neon-button:hover {
+        box-shadow: var(--cv-glow-strong);
+        transform: translateY(-1px);
+        filter: brightness(1.05);
+    }
+
+    .cv-neon-button:active {
+        transform: translateY(0);
+    }
+
+    .cv-neon-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .cv-neon-ghost {
+    display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--cv-radius-btn);
+        background: transparent;
+        color: var(--cv-green);
+        font-weight: 700;
+        padding: 0.85rem 1.4rem;
+        border: 1px solid var(--cv-border);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+        cursor: pointer;
+    }
+
+    .cv-neon-ghost:hover {
+        border-color: var(--cv-green);
+        background: rgba(0, 255, 136, 0.06);
+        box-shadow: var(--cv-glow-green);
+    }
+
+    /* ---------- Tipografía de color ---------- */
+    .cv-neon-green {
+        color: var(--cv-green);
+    }
+
+    .cv-neon-cyan {
+        color: var(--cv-cyan);
+    }
+
+    .cv-text-glow {
+        text-shadow: 0 0 14px rgba(0, 255, 136, 0.45);
+    }
+
+    .cv-text-glow-cyan {
+        text-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
+    }
+
+    .cv-text-2 {
+        color: var(--cv-text-2);
+    }
+
+    .cv-text-3 {
+        color: var(--cv-text-3);
+    }
+
+    /* ---------- Inputs ---------- */
+    .cv-input {
+        background: rgba(9, 24, 20, 0.72);
+        border: 1px solid var(--cv-border-soft);
+        border-radius: var(--cv-radius-input);
+        color: var(--cv-text);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cv-input::placeholder {
+        color: var(--cv-text-3);
+    }
+
+    .cv-input:focus {
+        outline: none;
+        border-color: var(--cv-green);
+        box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15), var(--cv-glow-green);
+    }
+
+    /* ---------- Badges / píldoras ---------- */
+    .cv-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        border-radius: 9999px;
+        background: rgba(0, 255, 136, 0.10);
+        border: 1px solid var(--cv-border);
+        color: var(--cv-green);
+        font-weight: 700;
+        padding: 0.25rem 0.7rem;
+        font-size: 0.72rem;
+    }
+
+    .cv-badge--cyan {
+        background: rgba(0, 229, 255, 0.10);
+        border-color: var(--cv-border-cyan);
+        color: var(--cv-cyan);
+    }
+
+    /* ---------- Switch (Priorizar ciclorrutas) ---------- */
+    .cv-switch {
+        position: relative;
+        display: inline-flex;
+        flex-shrink: 0;
+        width: 2.75rem;
+        height: 1.6rem;
+        border-radius: 9999px;
+        background: rgba(111, 129, 122, 0.35);
+        border: 1px solid var(--cv-border-soft);
+        cursor: pointer;
+        transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cv-switch span {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        height: 1.15rem;
+        width: 1.15rem;
+        border-radius: 9999px;
+        background: #e7f6ee;
+        transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .cv-switch.is-on {
+        background: rgba(0, 255, 136, 0.25);
+        border-color: var(--cv-green);
+        box-shadow: var(--cv-glow-green);
+    }
+
+    .cv-switch.is-on span {
+        transform: translateX(1.2rem);
+        background: var(--cv-green);
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.8);
+    }
+
+    /* ---------- Toasts / estado ---------- */
+    .cv-toast {
+        border-radius: 14px;
+        padding: 0.7rem 1rem;
+        color: #04100b;
+        font-weight: 700;
+        font-size: 0.85rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(8px);
+    }
+
+    .cv-toast--success {
+        background: linear-gradient(135deg, var(--cv-green), var(--cv-green-alt));
+        color: #02140d;
+        border: 1px solid rgba(2, 20, 13, 0.2);
+    }
+
+    .cv-toast--error {
+        background: var(--cv-red);
+        color: #1a0206;
+        border: 1px solid rgba(26, 2, 6, 0.2);
+    }
+
+    .cv-toast--info {
+        background: rgba(111, 129, 122, 0.9);
+        color: var(--cv-text);
+        border: 1px solid var(--cv-border-soft);
+    }
+
+    .cv-status-pill {
+        border-radius: 14px;
+        background: rgba(3, 10, 8, 0.82);
+        border: 1px solid var(--cv-border-soft);
+        color: var(--cv-text-2);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+/* ==========================================================================
+   Fondo decorativo heredado (reutilizado por layouts)
+   ========================================================================== */
+.hero-bg {
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(0, 255, 136, 0.08), transparent 32%),
+        radial-gradient(circle at 88% 18%, rgba(0, 229, 255, 0.06), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(0, 255, 136, 0.05), transparent 42%);
+    background-color: #030a08;
+}
+
+.road-dash {
+    background-image: linear-gradient(to right, rgba(0, 255, 136, 0.5) 0%, rgba(0, 255, 136, 0.5) 50%, transparent 50%, transparent 100%);
+    background-size: 24px 3px;
+    background-repeat: repeat-x;
+    background-position: bottom;
+}
+
+/* ==========================================================================
+   Animaciones
+   ========================================================================== */
 @layer utilities {
     .animate-fade-in-up {
         animation: fadeInUp 0.5s ease-out both;
@@ -101,14 +408,15 @@
     }
 }
 
-/* ====================== Mapa (Leaflet) ====================== */
+/* ==========================================================================
+   Mapa (Leaflet) en modo oscuro
+   ========================================================================== */
 
 .map-full {
     height: 100%;
     width: 100%;
 }
 
-/* Fuerza a que el contenedor del mapa ocupe todo el alto disponible */
 .map-page-body {
     height: calc(100vh - 4rem);
 }
@@ -124,7 +432,6 @@
     min-height: 480px;
 }
 
-/* Entrada suave del mapa */
 .animate-map-in {
     animation: mapIn 0.6s ease-out both;
 }
@@ -140,13 +447,183 @@
     }
 }
 
-/* Botón flotante "activo" (p. ej. ubicación ya registrada) */
+/* Botón flotante "activo" (p. ej. ubicación registrada) */
 .map-btn-active {
-    background: #ecfdf5;
-    box-shadow: 0 0 0 2px #10b981, 0 4px 10px rgb(0 0 0 / 0.15);
+    background: rgba(0, 255, 136, 0.14) !important;
+    border-color: var(--cv-green) !important;
+    box-shadow: var(--cv-glow-green);
 }
 
-/* Panel de planificación flotante */
+/* Controles de zoom Leaflet con glass oscuro */
+.leaflet-control-zoom {
+    border: none !important;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.leaflet-bar {
+    border-radius: 12px;
+    background: transparent;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 34px !important;
+    background: rgba(9, 24, 20, 0.82) !important;
+    color: var(--cv-green) !important;
+    border: 1px solid var(--cv-border-soft) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+    background: rgba(0, 255, 136, 0.14) !important;
+    box-shadow: var(--cv-glow-green);
+}
+
+.leaflet-bar a.leaflet-disabled {
+    color: var(--cv-text-3) !important;
+    background: rgba(9, 24, 20, 0.5) !important;
+}
+
+@media (max-width: 640px) {
+    .leaflet-control-zoom {
+        display: none;
+    }
+}
+
+/* Fondo del mapa (mientras cargan los tiles) */
+.leaflet-container {
+    background: #0b1e1a;
+    font-family: var(--cv-font);
+}
+
+/* Atribución discreta sobre fondo oscuro */
+.leaflet-control-attribution {
+    background: rgba(3, 10, 8, 0.8) !important;
+    color: var(--cv-text-3) !important;
+    font-size: 10px;
+    backdrop-filter: blur(6px);
+}
+
+.leaflet-control-attribution a {
+    color: var(--cv-text-2) !important;
+}
+
+/* Popups de Leaflet con estilo CicleVibes (dark glass) */
+.leaflet-popup-content-wrapper {
+    background: var(--cv-surface-solid);
+    border: 1px solid var(--cv-border);
+    color: var(--cv-text);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+}
+
+.leaflet-popup-tip {
+    background: var(--cv-surface-solid);
+    border: 1px solid var(--cv-border);
+}
+
+.leaflet-popup-content {
+    margin: 12px 16px;
+    font-family: var(--cv-font);
+    line-height: 1.4;
+    color: var(--cv-text);
+}
+
+.leaflet-popup-close-button {
+    color: var(--cv-green) !important;
+}
+
+/* ==========================================================================
+   Marcadores personalizados + navegación (tipo Waze)
+   ========================================================================== */
+
+.cicle-marker {
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 9999px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), var(--cv-glow-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #fff;
+}
+
+.cicle-marker--user {
+    background: #0d9488;
+    border-color: var(--cv-cyan);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), var(--cv-glow-cyan);
+}
+
+.cicle-marker--bike {
+    background: var(--cv-cyan);
+    color: #021b22;
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+    opacity: 0.92;
+}
+
+.cicle-marker--point {
+    background: var(--cv-orange);
+    color: #1a0500;
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 159, 67, 0.5);
+}
+
+.cicle-marker--origin {
+    background: var(--cv-green);
+    color: #02140d;
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), var(--cv-glow-green);
+}
+
+.cicle-marker--dest {
+    background: var(--cv-red);
+    color: #1a0206;
+    border-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 77, 90, 0.55);
+}
+
+.cicle-marker--user.navigating .cicle-marker-pulse {
+    display: block;
+}
+
+.cicle-marker-pulse {
+    display: none;
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: var(--cv-cyan);
+    animation: ciclePulse 2s infinite ease-out;
+}
+
+@keyframes ciclePulse {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(2.4);
+        opacity: 0;
+    }
+}
+
+/* Área de precisión de GPS */
+.leaflet-user-accuracy {
+    animation: ciclePulse 3s infinite ease-out;
+}
+
+/* ==========================================================================
+   Panel de planificación flotante
+   ========================================================================== */
+
 .route-panel {
     transition: box-shadow 0.3s ease, max-height 0.35s ease;
 }
@@ -155,7 +632,65 @@
     overflow: hidden;
 }
 
-/* Splash de carga con la rueda girando */
+/* Números de instrucción (01, 02…) */
+.cv-step-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: rgba(0, 255, 136, 0.12);
+    border: 1px solid var(--cv-border);
+    color: var(--cv-green);
+    flex-shrink: 0;
+}
+
+.cv-step-num--active {
+    background: var(--cv-green);
+    color: #02140d;
+    border-color: var(--cv-green);
+    box-shadow: var(--cv-glow-green);
+}
+
+/* Métricas alineadas a la derecha de cada instrucción (contraste AA sobre glass) */
+.cv-step-distance {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--cv-cyan);
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid var(--cv-border-cyan);
+    border-radius: 9999px;
+    padding: 0.15rem 0.55rem;
+    white-space: nowrap;
+}
+
+/* Enlaces secundarios con contraste WCAG AA sobre fondo oscuro */
+.link-neon {
+    color: var(--cv-green);
+    font-weight: 700;
+    transition: color 0.15s ease, filter 0.15s ease;
+}
+
+.link-neon:hover {
+    color: #4dffa8;
+    filter: drop-shadow(0 0 6px rgba(0, 255, 136, 0.4));
+}
+
+.link-neon .link-arrow {
+    transition: transform 0.2s ease;
+}
+
+.link-neon:hover .link-arrow {
+    transform: translateX(3px);
+}
+
+/* ==========================================================================
+   Splash de carga (rueda giratoria)
+   ========================================================================== */
+
 .app-splash {
     position: fixed;
     inset: 0;
@@ -163,7 +698,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
+    background: #030a08;
     transition: opacity 0.5s ease, visibility 0.5s ease;
 }
 
@@ -188,92 +723,22 @@
     }
 }
 
-/* Popups de Leaflet con estilo CicleVibes */
-.leaflet-popup-content-wrapper {
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.15);
-}
+/* ==========================================================================
+   Navegación (Waze)
+   ========================================================================== */
 
-.leaflet-popup-content {
-    margin: 12px 16px;
-    font-family: 'Figtree', system-ui, sans-serif;
-    line-height: 1.4;
-}
-
-/* Marcadores personalizados */
-.cicle-marker {
-    border: 2px solid #ffffff;
-    border-radius: 9999px;
-    box-shadow: 0 3px 8px rgb(0 0 0 / 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cicle-marker--user {
-    background: #0d9488;
-}
-
-.cicle-marker--bike {
-    background: #059669;
-}
-
-.cicle-marker--point {
-    background: #f59e0b;
-}
-
-.cicle-marker--origin {
-    background: #16a34a;
-}
-
-.cicle-marker--dest {
-    background: #ef4444;
-}
-
-/* ====================== Navegación (tipo Waze) ====================== */
-
-/* Marco azul tipo navegación para la posición del ciclista */
-.cicle-marker--user.navigating .cicle-marker-pulse {
-    display: block;
-}
-
-.cicle-marker-pulse {
-    display: none;
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    background: #0d9488;
-    animation: ciclePulse 2s infinite ease-out;
-}
-
-@keyframes ciclePulse {
-    0% {
-        transform: scale(1);
-        opacity: 0.7;
-    }
-    100% {
-        transform: scale(2.4);
-        opacity: 0;
-    }
-}
-
-/* Panel inferior de navegación (móvil) */
 .nav-danger {
-    background: linear-gradient(120deg, #dc2626, #ef4444);
+    background: linear-gradient(120deg, #ff4d5a, #ff2e40);
 }
 
 .nav-route {
-    background: linear-gradient(120deg, #059669, #0f766e);
+    background: linear-gradient(120deg, #00e676, #00b3a0);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
-/* Aumenta altura del mapa en móvil (quita el header para jugar al Waze). */
-.map-container-lg {
-    height: calc(100vh - 7rem);
-}
-
-/* Respeta la preferencia de movimiento reducido del usuario: quita las
- * animaciones y transiciones decorativas. La rueda del splash y el pulso
- * del marcador dejan de girar/expandirse. */
+/* ==========================================================================
+   Accesibilidad: respeta movimiento reducido
+   ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

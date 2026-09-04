@@ -7,7 +7,7 @@
 
         <title>{{ config('app.name', 'CicleVibes') }} - @yield('title', 'Mapa')</title>
 
-        <meta name="theme-color" content="#0d9488">
+        <meta name="theme-color" content="#030a08">
         <meta name="description" content="CicleVibes: planifica y navega rutas en bicicleta por Barranquilla con perfil ciclista, ciclorrutas y navegación paso a paso.">
 
         <!-- Favicons -->
@@ -17,20 +17,20 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700,800,900&display=swap" rel="stylesheet" />
 
         <!-- Scripts -->
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
     </head>
-    <body class="font-sans bg-white text-gray-900 antialiased">
+    <body class="font-sans bg-[#030a08] text-[#f1fff9] antialiased">
         <div class="hero-bg min-h-screen">
             @include('layouts.navigation')
 
             <!-- Page Heading -->
             @isset($header)
-                <header class="border-b border-emerald-100/40 bg-white/70 backdrop-blur-md">
+                <header class="border-b border-[rgba(0,255,136,0.12)] bg-[#061412]/70 backdrop-blur-md">
                     <div class="mx-auto max-w-7xl px-5 py-6 sm:px-8">
                         {{ $header }}
                     </div>
@@ -46,7 +46,7 @@
         <!-- Splash de carga con rueda girando -->
         <div id="app-splash" class="app-splash" aria-hidden="true">
             <div class="flex flex-col items-center gap-5">
-                <span class="relative flex h-16 w-16 items-center justify-center text-emerald-600">
+                <span class="relative flex h-16 w-16 items-center justify-center text-emerald-400">
                     <svg class="spin-wheel h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                         <g class="wheel-spokes">
                             <circle cx="12" cy="12" r="7"></circle>
@@ -54,7 +54,7 @@
                         </g>
                     </svg>
                 </span>
-                <span class="text-sm font-bold tracking-wide text-emerald-600">Pedaleando…</span>
+                <span class="text-sm font-bold tracking-wide text-emerald-400">Pedaleando…</span>
             </div>
         </div>
     </body>

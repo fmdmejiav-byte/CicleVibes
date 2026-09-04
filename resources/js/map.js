@@ -253,6 +253,9 @@ function CicleMap(config) {
                 const { latitude, longitude, accuracy } = position.coords;
                 userLocation = { lat: latitude, lng: longitude };
                 drawUserMarker(latitude, longitude, accuracy);
+                // Primer fix: centrar el mapa una sola vez (getCurrentPosition
+                // es de una sola llamada, no se repite en cada actualización).
+                map.setView([latitude, longitude], Math.max(map.getZoom(), 14));
                 setOrigin({ lat: latitude, lng: longitude, label: 'Tu ubicación', name: 'Mi ubicación', address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}` });
                 app.locating = false;
                 app.locationSet = true;
@@ -276,29 +279,44 @@ function CicleMap(config) {
     }
 
     function drawUserMarker(lat, lng, accuracy = 0) {
-        if (userAccuracyCircle) userAccuracyCircle.remove();
+        // El marcador y el círculo de precisión se crean una sola vez y se
+        // actualizan en cada fix GPS. Mantener un único círculo centrado en
+        // [lat, lng] con radio = accuracy evita que se acumulen instancias
+        // y que el círculo se despegue del marcador.
+        const latlng = [lat, lng];
+
         if (accuracy > 0) {
-            userAccuracyCircle = L.circle([lat, lng], {
-                radius: accuracy,
-                className: 'leaflet-user-accuracy',
-                color: '#0d9488',
-                fillColor: '#0d9488',
-                fillOpacity: 0.12,
-                weight: 1,
-            }).addTo(map);
+            if (userAccuracyCircle) {
+                userAccuracyCircle.setLatLng(latlng);
+                userAccuracyCircle.setRadius(accuracy);
+            } else {
+                userAccuracyCircle = L.circle(latlng, {
+                    radius: accuracy,
+                    className: 'leaflet-user-accuracy',
+                    color: '#0d9488',
+                    fillColor: '#0d9488',
+                    fillOpacity: 0.12,
+                    weight: 1,
+                }).addTo(map);
+            }
+        } else if (userAccuracyCircle) {
+            userAccuracyCircle.remove();
+            userAccuracyCircle = null;
         }
 
         if (userMarker) {
-            userMarker.setLatLng([lat, lng]);
+            userMarker.setLatLng(latlng);
         } else {
             const navigating = payload().navigating ? 'navigating' : '';
-            userMarker = L.marker([lat, lng], {
+            userMarker = L.marker(latlng, {
                 icon: markerIcon('user', ICONS.user, navigating),
                 zIndexOffset: 1000,
             }).addTo(map).bindPopup('Tu posición');
         }
 
-        map.setView([lat, lng], Math.max(map.getZoom(), 15));
+        // Este método NO mueve el mapa. Centrar el mapa es responsabilidad
+        // de quien solicita la ubicación (una sola vez) o del modo de
+        // seguimiento explícito (navegación).
         map.closePopup();
     }
 
@@ -502,6 +520,11 @@ function CicleMap(config) {
             : null;
 
         // Seguimiento GPS continuo sin recargar la página.
+        // Evita watchers duplicados si la navegación se reinicia.
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
         watchId = navigator.geolocation.watchPosition(
             onPositionUpdate,
             () => { app.status = 'No pudimos obtener la posición GPS.'; },

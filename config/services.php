@@ -49,14 +49,18 @@ return [
     | cambiando estas variables de entorno.
     */
     'map' => [
-        'provider' => env('MAP_PROVIDER', 'carto'),
+        'provider' => env('MAP_PROVIDER', 'stadia'),
 
         // Tiles oscuros (por defecto) para integrar el mapa con el tema dark
-        // de la aplicación. Sustituible por cualquier proveedor vía .env.
-        'tiles_url' => env('MAP_TILES_URL', 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'),
+        // de la aplicación. Se usan los tiles de Stadia Maps (Alidade Smooth
+        // Dark): compatibles con Leaflet, sin API key para desarrollo local
+        // y usuarios no comerciales. Sustituible por cualquier proveedor vía
+        // .env (MAP_TILES_URL); para producción de pago se puede añadir la
+        // API key gratuita de Stadia con ?api_key=... en la URL.
+        'tiles_url' => env('MAP_TILES_URL', 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png'),
         'tiles_attribution' => env(
             'MAP_TILES_ATTRIBUTION',
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         ),
         'tiles_max_zoom' => (int) env('MAP_TILES_MAX_ZOOM', 19),
 

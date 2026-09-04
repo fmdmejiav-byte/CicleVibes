@@ -1,22 +1,12 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div>
-            <span class="text-xs font-bold uppercase tracking-widest text-emerald-600">Mapa</span>
-            <h2 class="mt-1 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
-                Planifica y navega <span class="text-emerald-600">al ritmo de tu bici</span>
-            </h2>
-            <p class="mt-1.5 text-sm text-gray-600">Encuentra rutas seguras, aprovecha las ciclorrutas y llega a tu destino rodando tranquilo.</p>
-        </div>
-    </x-slot>
-
-    <div class="relative overflow-hidden border-t border-emerald-100/60"
+    <div class="relative overflow-hidden"
          x-data="CicleMap({{ json_encode($mapConfig) }})">
 
-        <!-- Mapa -->
-        <div id="cicle-map" class="map-container-lg w-full bg-gray-100"></div>
+        <!-- Mapa (casi pantalla completa) -->
+        <div id="cicle-map" class="map-container-full w-full animate-map-in bg-gray-100"></div>
 
         <!-- Buscador de destino (superior, centrado) -->
-        <div class="absolute left-3 top-3 right-3 z-[1000] flex justify-center">
+        <div class="absolute left-3 right-3 top-3 z-[1000] flex justify-center lg:left-[420px] lg:right-4">
             <div class="w-full max-w-xl">
                 <div class="flex items-center overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-gray-200 focus-within:ring-2 focus-within:ring-emerald-500">
                     <span class="flex items-center pl-4 text-emerald-600">
@@ -63,7 +53,7 @@
         <div class="absolute right-3 top-20 z-[1000] flex flex-col items-end gap-2 lg:top-16">
             <button @click="setOriginFromUser()" :title="locating ? 'Localizando…' : 'Mi ubicación'"
                 class="flex h-11 w-11 items-center justify-center rounded-full bg-white text-emerald-600 shadow-lg ring-1 ring-gray-200 transition hover:bg-emerald-50"
-                :class="{ 'animate-pulse': locating }">
+                :class="{ 'map-btn-active': locationSet }">
                 <svg x-show="!locating" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2"></path></svg>
                 <svg x-show="locating" x-cloak class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path></svg>
             </button>
@@ -78,19 +68,42 @@
                 class="flex h-11 items-center gap-2 rounded-full bg-white pl-3 pr-4 text-emerald-600 shadow-lg ring-1 ring-gray-200 transition hover:bg-emerald-50"
                 :class="showCyclorutas ? 'ring-emerald-500' : 'opacity-70'">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 1.82.33z"></path><path d="M4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7 9.95l-.06.06A1.65 1.65 0 0 0 4.6 9z"></path><path d="m14 5 2 -0.5"></path></svg>
-                <span class="pr-1 text-xs font-bold text-emerald-700" x-text="showCyclorutas ? 'Ciclorutas' : 'Ciclorutas'"></span>
+                <span class="pr-1 text-xs font-bold text-emerald-700">Ciclorutas</span>
             </button>
         </div>
 
-        <!-- Panel de planificación / rutas / navegación -->
-        <div x-cloak class="absolute bottom-3 left-1/2 z-[1000] flex max-h-[45vh] w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200 lg:left-4 lg:right-auto lg:top-16 lg:bottom-3 lg:w-96 lg:max-w-none lg:translate-x-0 lg:max-h-[calc(100vh-16rem)]">
-            <div class="flex flex-col overflow-hidden">
+        <!-- Panel de planificación / rutas / navegación (flotante) -->
+        <div x-cloak
+             class="route-panel absolute bottom-3 left-1/2 z-[1000] flex max-h-[55vh] w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-gray-200 lg:left-3 lg:right-auto lg:top-16 lg:bottom-3 lg:w-[380px] lg:max-w-none lg:translate-x-0 lg:max-h-[calc(100vh-11rem)]"
+             :class="panelCollapsed ? 'route-panel--collapsed max-h-[62px] lg:max-h-[62px]' : ''">
+
+            <!-- Cabecera del panel (siempre visible) -->
+            <div class="flex items-center justify-between gap-3 rounded-t-2xl border-b border-gray-100 bg-white px-4 py-3">
+                <div class="flex min-w-0 items-center gap-2">
+                    <h3 class="truncate font-black tracking-tight text-gray-900"
+                        x-text="mode === 'navigating' ? 'Navegando' : (mode === 'routes' ? 'Elige tu ruta' : 'Planificar ruta')"></h3>
+                    <span x-show="showCyclorutas && !panelCollapsed" x-cloak class="hidden rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 lg:inline-flex">🚲 Ciclorrutas</span>
+                </div>
+
+                <!-- Resumen compacto al colapsar (navegando) -->
+                <div x-show="panelCollapsed && mode === 'navigating'" x-cloak class="flex items-center gap-2 text-xs font-bold text-emerald-700">
+                    <span x-text="formatKm(distanceRemainingKm)"></span>
+                    <span class="text-gray-300">·</span>
+                    <span x-text="formatDur(timeRemainingMin)"></span>
+                </div>
+
+                <button @click="togglePanel()"
+                    :title="panelCollapsed ? 'Expandir panel' : 'Colapsar panel'"
+                    class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-emerald-50 hover:text-emerald-600">
+                    <svg class="h-5 w-5 transition-transform duration-300" :class="panelCollapsed ? 'rotate-180' : ''"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"></path></svg>
+                </button>
+            </div>
+
+            <!-- Cuerpo del panel -->
+            <div x-show="!panelCollapsed" class="flex flex-col overflow-hidden">
                 <template x-if="mode === 'plan' || mode === 'routes' || mode === 'pick'">
                     <div class="flex flex-col overflow-hidden">
-                        <div class="border-b border-emerald-100/70 bg-emerald-50/40 px-4 py-3">
-                            <h3 class="font-black tracking-tight text-gray-900" x-text="mode === 'routes' ? 'Elige tu ruta' : 'Planificar ruta'"></h3>
-                        </div>
-
                         <div class="flex-1 space-y-3 overflow-y-auto p-4">
 
                             <!-- Lugar seleccionado de la búsqueda -->
@@ -170,7 +183,9 @@
                                             <span class="mt-0.5 flex items-center gap-3 text-sm text-gray-600">
                                                 <span class="font-semibold" x-text="formatKm(r.distance_km)"></span>
                                                 <span>·</span>
-                                                <span x-text="formatMin(r.duration_min)"></span>
+                                                <span x-text="formatDur(r.duration_min)"></span>
+                                                <span>·</span>
+                                                <span class="text-xs font-semibold text-emerald-600" x-text="routeAvgSpeed(r)"></span>
                                             </span>
                                             <span x-show="r.cicloruta_coverage_pct > 0" x-cloak class="mt-1.5 block space-y-1">
                                                 <span class="flex items-center gap-1 text-xs font-semibold text-emerald-700">
@@ -220,7 +235,7 @@
 
                 <!-- ===================== NAVEGANDO ===================== -->
                 <template x-if="mode === 'navigating'">
-                    <div class="flex flex-col">
+                    <div class="flex flex-col overflow-hidden">
                         <!-- Desviación -->
                         <div x-show="deviating" x-cloak class="nav-danger px-4 py-3 text-white">
                             <div class="flex items-center justify-between gap-3">
@@ -254,7 +269,7 @@
                                 </div>
                                 <div class="h-9 w-px bg-white/25"></div>
                                 <div class="text-center">
-                                    <p class="text-2xl font-extrabold" x-text="formatMin(timeRemainingMin)"></p>
+                                    <p class="text-2xl font-extrabold" x-text="formatDur(timeRemainingMin)"></p>
                                     <p class="text-xs text-emerald-100">Tiempo estimado</p>
                                 </div>
                                 <div class="h-9 w-px bg-white/25"></div>
@@ -295,7 +310,7 @@
         </div>
 
         <!-- Leyenda de ciclorrutas -->
-        <div x-show="showCyclorutas" x-cloak class="absolute left-3 top-40 z-[999] rounded-2xl bg-white/95 px-3 py-2.5 text-xs shadow-lg ring-1 ring-gray-200 backdrop-blur lg:left-auto lg:right-3 lg:top-44">
+        <div x-show="showCyclorutas" x-cloak class="absolute left-3 top-40 z-[999] rounded-2xl bg-white/95 px-3 py-2.5 text-xs shadow-lg ring-1 ring-gray-200 backdrop-blur lg:right-3 lg:left-auto lg:top-44">
             <p class="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-700">Ciclorrutas</p>
             <div class="space-y-1">
                 <div class="flex items-center gap-2"><span>🔴</span><span class="font-medium text-gray-700">Ciclorruta en calzada</span></div>
@@ -306,7 +321,7 @@
         </div>
 
         <!-- Estado / barra de información -->
-        <div x-show="status" x-cloak class="absolute left-1/2 top-20 z-[999] w-max max-w-[90%] -translate-x-1/2 rounded-xl bg-gray-900/90 px-4 py-2.5 text-sm text-white shadow-lg backdrop-blur">
+        <div x-show="status" x-cloak class="absolute left-1/2 top-20 z-[999] w-max max-w-[90%] -translate-x-1/2 rounded-xl bg-gray-900/90 px-4 py-2.5 text-sm text-white shadow-lg backdrop-blur lg:left-[420px] lg:right-4 lg:top-20">
             <span x-text="status"></span>
         </div>
 

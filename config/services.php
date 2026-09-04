@@ -131,6 +131,13 @@ return [
         // su geometría la calcula nuestra red, no el servidor de rutas).
         'bike_avg_speed_kmh' => (float) env('BIKE_AVG_SPEED_KMH', 15),
 
+        // Velocidad media máxima (km/h) que se considera razonable para una
+        // bicicleta en ciudad. Si la duración devuelta por OSRM (perfil
+        // 'cycling') implicara una velocidad media mayor, se recalcula a
+        // partir de la distancia real de la geometría con bike_avg_speed_kmh.
+        // Evita mostrar rutas largas con tiempos irrealmente cortos.
+        'bike_route_max_expected_speed_kmh' => (float) env('BIKE_ROUTE_MAX_EXPECTED_SPEED_KMH', 25),
+
         // Límite de resultados de marcadores de bicicletas por petición.
         'bicicletas_limit' => (int) env('MAP_BICICLETAS_LIMIT', 100),
 

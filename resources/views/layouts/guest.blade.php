@@ -7,6 +7,13 @@
 
         <title>{{ config('app.name', 'CicleVibes') }} - @yield('title', 'Autenticación')</title>
 
+        <meta name="theme-color" content="#0d9488">
+
+        <!-- Favicons -->
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />

@@ -820,6 +820,9 @@ function CicleMap(config) {
         selectedPlace: null,
         pickHint: '',
 
+        // Panel
+        panelCollapsed: false,
+
         // Rutas
         origin: null,
         destination: null,
@@ -860,6 +863,11 @@ function CicleMap(config) {
         setAsOriginFromSearch,
         setAsDestinationFromSearch,
 
+        // Panel
+        togglePanel() {
+            this.panelCollapsed = !this.panelCollapsed;
+        },
+
         // Origen / destino
         setOriginFromUser,
         setOriginFromSearch: setAsOriginFromSearch,
@@ -899,6 +907,19 @@ function CicleMap(config) {
         },
         formatMin(value) {
             return value !== null && value !== undefined ? `${value} min` : '—';
+        },
+        formatDur(value) {
+            if (value === null || value === undefined) return '—';
+            const total = Math.max(1, Math.round(Number(value)));
+            const h = Math.floor(total / 60);
+            const m = total % 60;
+            if (h > 0) return `${h} h ${m} min`;
+            return `${m} min`;
+        },
+        routeAvgSpeed(route) {
+            if (!route || !route.distance_km || !route.duration_min) return '—';
+            const kmh = Math.round((route.distance_km / route.duration_min) * 60);
+            return kmh > 0 ? `≈ ${kmh} km/h` : '—';
         },
         originLabel(point) {
             return point ? (point.label || point.name || 'Punto seleccionado') : 'No definido';

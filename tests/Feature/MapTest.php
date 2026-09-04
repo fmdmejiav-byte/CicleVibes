@@ -15,7 +15,7 @@ test('un usuario autenticado puede ver la página del mapa', function () {
     $this->actingAs($user)
         ->get(route('mapa'))
         ->assertStatus(200)
-        ->assertSee('Planifica y navega')
+        ->assertSee('¿A dónde quieres ir?')
         ->assertSee('Priorizar ciclorrutas')
         ->assertSee('CicleVibes');
 });

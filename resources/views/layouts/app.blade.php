@@ -7,6 +7,14 @@
 
         <title>{{ config('app.name', 'CicleVibes') }} - @yield('title', 'Mapa')</title>
 
+        <meta name="theme-color" content="#0d9488">
+        <meta name="description" content="CicleVibes: planifica y navega rutas en bicicleta por Barranquilla con perfil ciclista, ciclorrutas y navegación paso a paso.">
+
+        <!-- Favicons -->
+        <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="32x32">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
@@ -33,6 +41,21 @@
             <main>
                 {{ $slot }}
             </main>
+        </div>
+
+        <!-- Splash de carga con rueda girando -->
+        <div id="app-splash" class="app-splash" aria-hidden="true">
+            <div class="flex flex-col items-center gap-5">
+                <span class="relative flex h-16 w-16 items-center justify-center text-emerald-600">
+                    <svg class="spin-wheel h-16 w-16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <g class="wheel-spokes">
+                            <circle cx="12" cy="12" r="7"></circle>
+                            <path d="M12 5v14M5 12h14M7 7l10 10M17 7 7 17"></path>
+                        </g>
+                    </svg>
+                </span>
+                <span class="text-sm font-bold tracking-wide text-emerald-600">Pedaleando…</span>
+            </div>
         </div>
     </body>
 </html>

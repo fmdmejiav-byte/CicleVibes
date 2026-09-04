@@ -59,7 +59,7 @@ class OsrmRoutingDriver implements BicycleRoutingDriver
         foreach ($payload['routes'] as $index => $raw) {
             $legs = $raw['legs'][0] ?? null;
             $steps = $legs['steps'] ?? [];
-            $routes[] = [
+            $route = [
                 'id' => $index + 1,
                 'distance_m' => (float) ($raw['distance'] ?? 0),
                 'duration_seconds' => (float) ($raw['duration'] ?? 0),
@@ -71,9 +71,51 @@ class OsrmRoutingDriver implements BicycleRoutingDriver
                 'profile' => $this->profile,
                 'driver' => $this->name(),
             ];
+            $routes[] = $this->coherentDuration($route);
         }
 
         return $routes;
+    }
+
+    /**
+     * Ajusta la duración de una ruta para que sea coherente con su distancia real.
+     *
+     * OSRM con el perfil 'cycling' ya estima el tiempo sobre la geometría del
+     * recorrido con su modelo de velocidad para bicicleta, que es la mejor
+     * opción disponible en la arquitectura actual. No obstante, en condiciones
+     * urbanas su heurística puede ser optimista y mostrar una ruta larga con
+     * un tiempo irrealmente corto. Para evitarlo: si la duración devuelta
+     * implicara una velocidad media por encima de bike_route_max_expected_speed_kmh
+     * (improbable en ciudad), se recalcula a partir de la distancia REAL de la
+     * geometría con la velocidad media de desplazamiento (bike_avg_speed_kmh).
+     *
+     * @param  array<string, mixed>  $route
+     * @return array<string, mixed>
+     */
+    protected function coherentDuration(array $route): array
+    {
+        $distance = (float) ($route['distance_m'] ?? 0);
+        if ($distance <= 0) {
+            return $route;
+        }
+
+        $impliedSpeed = (float) ($route['duration_seconds'] ?? 0) > 0
+            ? $distance / (float) $route['duration_seconds'] * 3.6
+            : PHP_FLOAT_MAX;
+
+        $maxSpeed = (float) config('services.map.bike_route_max_expected_speed_kmh', 25);
+
+        if ($impliedSpeed <= $maxSpeed) {
+            return $route;
+        }
+
+        $avgSpeed = (float) config('services.map.bike_avg_speed_kmh', 15);
+        $seconds = $distance / ($avgSpeed * 1000 / 3600);
+
+        $route['duration_seconds'] = round($seconds, 1);
+        $route['duration_min'] = (int) round($seconds / 60);
+
+        return $route;
     }
 
     /**

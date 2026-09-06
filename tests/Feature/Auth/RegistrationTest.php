@@ -20,6 +20,7 @@ test('new users can register', function () {
         'email' => 'juan@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'accept_terms' => 1,
     ]);
 
     $this->assertAuthenticated();
@@ -42,6 +43,7 @@ test('registration requires nombre, apellido and email unique', function () {
         'email' => 'juan@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'accept_terms' => 1,
     ])->assertSessionHasErrors(['nombre', 'apellido']);
 
     User::factory()->create(['email' => 'juan@example.com']);
@@ -52,5 +54,6 @@ test('registration requires nombre, apellido and email unique', function () {
         'email' => 'juan@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
+        'accept_terms' => 1,
     ])->assertSessionHasErrors(['email']);
 });

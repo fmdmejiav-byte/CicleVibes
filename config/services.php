@@ -41,6 +41,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Google OAuth 2.0 ("Continuar con Google")
+    |--------------------------------------------------------------------------
+    | Credenciales OAuth 2.0 / OpenID Connect de Google. Se crean en
+    | Google Cloud Console (https://console.cloud.google.com/apis/credentials)
+    | y se definen únicamente mediante variables de entorno; nunca en código.
+    | GOOGLE_REDIRECT_URI debe coincidir exactamente con la URI de redirección
+    | autorizada en la consola (p. ej. https://mydominio.com/auth/google/callback).
+    */
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Mapas de CicleVibes (Leaflet + OpenStreetMap)
     |--------------------------------------------------------------------------
     | Configuración de la funcionalidad de mapas basada en tecnologías

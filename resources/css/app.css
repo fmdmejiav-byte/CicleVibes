@@ -191,6 +191,36 @@
         box-shadow: var(--cv-glow-green);
     }
 
+    /* "Continuar con Google": botón glass oscuro coherente con el
+       sistema de diseño de CicleVibes, con el icono oficial de Google. */
+    .cv-google-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        width: 100%;
+        border-radius: var(--cv-radius-btn);
+        background: rgba(9, 24, 20, 0.72);
+        border: 1px solid var(--cv-border-soft);
+        color: var(--cv-text);
+        font-weight: 700;
+        padding: 0.78rem 1.2rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        cursor: pointer;
+    }
+
+    .cv-google-button:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.32);
+        background: rgba(15, 32, 28, 0.85);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    }
+
+    .cv-google-button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
     /* ---------- Tipografía de color ---------- */
     .cv-neon-green {
         color: var(--cv-green);

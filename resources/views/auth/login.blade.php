@@ -19,6 +19,16 @@
         <!-- Session Status -->
         <x-auth-session-status class="mb-4 mt-6" :status="session('status')" />
 
+        <!-- Flash error (p. ej. desde el callback de Google) -->
+        @if (session('error'))
+            <div class="mt-6 flex items-start gap-3 rounded-xl border border-[rgba(255,77,90,0.3)] bg-[rgba(255,77,90,0.1)] p-3.5 text-sm text-[#ffb3b8] animate-fade-in">
+                <svg class="mt-0.5 h-5 w-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle><path d="M12 8v4M12 16h.01"></path>
+                </svg>
+                <p>{{ session('error') }}</p>
+            </div>
+        @endif
+
         <!-- Error summary -->
         @if ($errors->has('email') || $errors->has('password'))
             <div class="mt-6 flex items-start gap-3 rounded-xl border border-[rgba(255,77,90,0.3)] bg-[rgba(255,77,90,0.1)] p-3.5 text-sm text-[#ffb3b8] animate-fade-in">
@@ -131,6 +141,11 @@
 
             @include('auth.partials._terms-modal')
         </form>
+
+        <!-- "Continuar con Google" (OAuth 2.0 / OpenID Connect) -->
+        <div x-data="{ googleTerms: false, termsOpen: false }">
+            @include('auth.partials._google-section')
+        </div>
 
         <p class="mt-8 text-center text-sm text-[#a7b8b2]">
             ¿No tienes una cuenta?

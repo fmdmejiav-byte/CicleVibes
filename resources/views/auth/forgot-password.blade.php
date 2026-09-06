@@ -13,14 +13,14 @@
 
             <!-- Email Address -->
             <div>
-                <x-input-label for="email" :value="__('Email')" />
-                <x-text-input id="email" class="mt-1.5 block w-full" type="email" name="email" :value="old('email')" required autofocus />
+                <x-input-label for="email" value="Correo electrónico" class="font-semibold" />
+                <x-text-input id="email" class="mt-1.5 block w-full" type="email" name="email" :value="old('email')" required autofocus placeholder="tucorreo@ejemplo.com" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 
             <div>
                 <x-primary-button class="w-full justify-center">
-                    {{ __('Enviar enlace') }}
+                    Enviar enlace de recuperación
                 </x-primary-button>
             </div>
         </form>

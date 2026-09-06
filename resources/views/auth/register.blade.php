@@ -193,6 +193,11 @@
             @include('auth.partials._terms-modal')
         </form>
 
+        <!-- "Continuar con Google" (OAuth 2.0 / OpenID Connect) -->
+        <div x-data="{ googleTerms: false, termsOpen: false }">
+            @include('auth.partials._google-section')
+        </div>
+
         <p class="mt-8 text-center text-sm text-[#a7b8b2]">
             ¿Ya tienes una cuenta?
             <a href="{{ route('login') }}" class="link-neon">

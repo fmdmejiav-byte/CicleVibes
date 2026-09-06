@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,7 +22,9 @@ class User extends Authenticatable
         'telefono',
         'foto',
         'email',
+        'email_verified_at',
         'password',
+        'google_id',
     ];
 
     protected $hidden = [
@@ -43,6 +46,27 @@ class User extends Authenticatable
     public function getNombreCompletoAttribute(): string
     {
         return trim($this->nombre.' '.$this->apellido);
+    }
+
+    /**
+     * Indica si la cuenta dispone de una contraseña local.
+     *
+     * Los usuarios creados mediante "Continuar con Google" no tienen
+     * contraseña local a menos que la establezcan más adelante.
+     */
+    public function hasPassword(): bool
+    {
+        return $this->password !== null;
+    }
+
+    /**
+     * Define la notificación de restablecimiento de contraseña de CicleVibes.
+     *
+     * @param  string  $token
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**

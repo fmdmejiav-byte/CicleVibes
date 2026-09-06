@@ -29,7 +29,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('register') }}" class="mt-6 space-y-5" x-data="{ show: false, showConfirm: false, loading: false }" @submit="loading = true">
+        <form method="POST" action="{{ route('register') }}" class="mt-6 space-y-5" x-data="{ show: false, showConfirm: false, loading: false, accepted: false, termsOpen: false }" @submit="loading = true">
             @csrf
 
             <!-- Nombre -->
@@ -151,12 +151,33 @@
                 </div>
             </div>
 
+            <!-- Aceptación de términos y política de datos -->
+            <div class="rounded-xl border border-[rgba(0,229,255,0.2)] bg-[rgba(0,229,255,0.05)] p-3.5">
+                <label class="flex cursor-pointer items-start gap-3 select-none">
+                    <input
+                        type="checkbox"
+                        name="accept_terms"
+                        value="1"
+                        x-model="accepted"
+                        required
+                        class="mt-0.5 h-5 w-5 rounded border-[rgba(0,255,136,0.3)] bg-[rgba(9,24,20,0.6)] text-[#00ff88] accent-[#00ff88] focus:ring-[#00ff88]/40"
+                    >
+                    <span class="text-sm leading-snug text-[#a7b8b2]">
+                        He leído y acepto los
+                        <button type="button" @click="termsOpen = true" class="link-neon inline font-semibold">Términos y Condiciones</button>
+                        y la
+                        <button type="button" @click="termsOpen = true" class="link-neon inline font-semibold">Política de Tratamiento de Datos</button>.
+                    </span>
+                </label>
+            </div>
+
             <!-- Submit -->
             <div>
                 <button
                     type="submit"
-                    :disabled="loading"
+                    :disabled="loading || !accepted"
                     class="cv-neon-button w-full"
+                    :class="(!accepted) ? '!opacity-45 !shadow-none' : ''"
                 >
                     <span x-show="!loading" class="inline-flex items-center gap-2">
                         Crear cuenta
@@ -168,6 +189,8 @@
                     </span>
                 </button>
             </div>
+
+            @include('auth.partials._terms-modal')
         </form>
 
         <p class="mt-8 text-center text-sm text-[#a7b8b2]">

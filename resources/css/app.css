@@ -436,14 +436,16 @@
     animation: mapIn 0.6s ease-out both;
 }
 
+/* La animación de entrada del mapa NO debe aplicar transform al contenedor
+   de Leaflet: un scale (aunque termine en 1) provoca desalineaciones
+   subpíxel entre el pane SVG (círculos/líneas) y el pane de marcadores DIV,
+   sobre todo en viewports móviles con tamaños impares. Solo usamos opacidad. */
 @keyframes mapIn {
     from {
         opacity: 0;
-        transform: scale(1.01);
     }
     to {
         opacity: 1;
-        transform: scale(1);
     }
 }
 
@@ -615,9 +617,16 @@
     }
 }
 
-/* Área de precisión de GPS */
+/* Área de precisión de GPS.
+   Importante: Leaflet dibuja el círculo como un <path> dentro del SVG del
+   overlayPane. Para que la animación pulse se escale desde su propio centro
+   (y no desde el origen (0,0) de todo el mapa, lo que desplazaba el círculo
+   fuera de la ubicación real), es obligatorio fijar transform-box y
+   transform-origin al centro del elemento. */
 .leaflet-user-accuracy {
     animation: ciclePulse 3s infinite ease-out;
+    transform-box: fill-box;
+    transform-origin: center;
 }
 
 /* ==========================================================================

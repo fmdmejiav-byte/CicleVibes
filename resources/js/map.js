@@ -105,6 +105,21 @@ function CicleMap(config) {
             attribution: config.tiles_attribution,
         }).addTo(map);
 
+        // Si el contenedor cambia de tamaño tras inicializarse (plicado de
+        // scrollbars, fuentes, rotación de pantalla, etc.), Leaflet debe
+        // recalcular sus dimensiones o el pane SVG (círculo de precisión,
+        // rutas) puede quedar desalineado respecto al pane de marcadores.
+        // invalidateSize() es idempotente y no mueve el mapa visible.
+        window.addEventListener('resize', () => {
+            if (map) map.invalidateSize();
+        });
+
+        // Redundante pero seguro: una vez el layout termina de asentarse
+        // (fuentes, splash), pedimos a Leaflet que recalcule su tamaño.
+        setTimeout(() => {
+            if (map) map.invalidateSize();
+        }, 250);
+
         map.on('click', onMapClick);
         map.on('moveend', throttledCyclorutasFetch);
         map.on('zoomend', applyBikeDensity);
@@ -987,9 +1002,13 @@ function CicleMap(config) {
 
     function addToast(message, type = 'info') {
         const app = payload();
-        app.toast = { message, type, id: Date.now() };
+        // El id se captura en una variable: comparar aquí contra Date.now()
+        // en el timeout (4000ms después) nunca coincidía, así que el toast
+        // permanecía visible indefinidamente.
+        const id = Date.now();
+        app.toast = { message, type, id };
         setTimeout(() => {
-            if (app.toast && app.toast.id === Date.now()) app.toast = null;
+            if (app.toast && app.toast.id === id) app.toast = null;
         }, 4000);
     }
 
@@ -1008,7 +1027,9 @@ function CicleMap(config) {
 
         // Panel
         panelCollapsed: false,
-        legendOpen: true,
+        // En pantallas pequeñas la leyenda arranca colapsada para no
+        // cubrir el mapa; en escritorio (>=1024px) queda abierta como antes.
+        legendOpen: window.innerWidth >= 1024,
 
         // Rutas
         origin: null,

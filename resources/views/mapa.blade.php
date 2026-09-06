@@ -54,7 +54,7 @@
         </div>
 
         <!-- ============ Controles de capa (izquierda) ============ -->
-        <div class="absolute left-3 top-[74px] z-[1000] flex flex-col items-start gap-2">
+        <div class="absolute left-3 top-[72px] z-[1000] flex flex-row flex-wrap items-start gap-2 lg:top-[74px] lg:flex-col">
             <button @click="setOriginFromUser()" :title="locating ? 'Localizando…' : 'Mi ubicación'"
                 class="flex h-11 w-11 items-center justify-center rounded-full border border-[rgba(0,255,136,0.18)] bg-[rgba(9,24,20,0.82)] text-[#00ff88] shadow-lg backdrop-blur transition hover:bg-[rgba(0,255,136,0.14)] hover:shadow-[0_0_18px_rgba(0,255,136,0.3)]"
                 :class="{ 'map-btn-active': locationSet }">
@@ -176,7 +176,7 @@
                             <div class="rounded-2xl border border-[rgba(0,255,136,0.15)] bg-[rgba(9,24,20,0.5)] p-3">
                                 <div class="flex items-center justify-between gap-2">
                                     <p class="text-[11px] font-bold uppercase tracking-wider text-[#00ff88]">Origen</p>
-                                    <div class="flex gap-1.5">
+                                    <div class="flex flex-wrap gap-1.5">
                                         <button @click="setOriginFromUser()" class="rounded-lg bg-[linear-gradient(135deg,#00ff88,#00b3a0)] px-2 py-1 text-[11px] font-bold text-[#02140d] shadow-[0_0_12px_rgba(0,255,136,0.3)] transition hover:brightness-110">Mi ubicación</button>
                                         <button @click="pickOnMap('origin')" class="rounded-lg border border-[rgba(0,255,136,0.3)] bg-[rgba(0,255,136,0.08)] px-2 py-1 text-[11px] font-bold text-[#00ff88] transition hover:bg-[rgba(0,255,136,0.15)]">Señalar en mapa</button>
                                     </div>
@@ -353,8 +353,8 @@
             </div>
         </div>
 
-        <!-- ============ Leyenda (inferior izquierda / colapsable) ============ -->
-        <div class="absolute left-3 top-[150px] z-[999] lg:top-auto lg:bottom-4">
+        <!-- ============ Leyenda (izquierda / colapsable) ============ -->
+        <div class="absolute left-3 top-[124px] z-[999] lg:top-auto lg:bottom-4">
             <div class="cv-glass-soft w-auto min-w-[150px] rounded-2xl p-3">
                 <button @click="toggleLegend()"
                     class="flex w-full items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-wider text-[#a7b8b2] transition hover:text-[#f1fff9]">
@@ -373,12 +373,12 @@
         </div>
 
         <!-- ============ Estado (barra de información) ============ -->
-        <div x-show="status" x-cloak class="cv-status-pill absolute left-1/2 top-[150px] z-[1000] w-max max-w-[90%] -translate-x-1/2 px-4 py-2.5 text-sm lg:top-[76px]">
+        <div x-show="status" x-cloak class="cv-status-pill absolute left-1/2 top-[176px] z-[1000] w-max max-w-[90%] -translate-x-1/2 px-4 py-2.5 text-sm lg:top-[76px]">
             <span x-text="status"></span>
         </div>
 
         <!-- ============ Notificación flotante (toast) ============ -->
-        <div x-show="toast" x-cloak class="absolute left-1/2 top-32 z-[1001] -translate-x-1/2 lg:top-24">
+        <div x-show="toast" x-cloak class="absolute left-1/2 top-[226px] z-[1001] -translate-x-1/2 lg:top-24">
             <span class="flex items-center gap-2.5 cv-toast"
                   :class="{ 'cv-toast--success': toast?.type === 'success', 'cv-toast--error': toast?.type === 'error', 'cv-toast--info': !toast || toast?.type === 'info' }">
                 <svg x-show="toast?.type === 'success'" x-cloak class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>

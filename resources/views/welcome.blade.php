@@ -174,7 +174,7 @@
                                 ['Ciclorrutas priorizadas', 'Activa el modo ciclorrutas y elige el trayecto que más las aproveche.'],
                                 ['Navegación paso a paso', 'Indicaciones claras mientras ruedas, con recálculo automático si te desvías.'],
                                 ['Búsqueda de destinos', 'Encuentra cualquier lugar de Barranquilla y planifica al instante.'],
-                                ['Comunidad', 'Comparte publicaciones y comenta con otros ciclistas.'],
+                                ['Ubicación actual', 'Fija tu posición real con geolocalización y úsala como origen de tus rutas.'],
                                 ['Gratis', 'Sin costos ocultos: todo lo esencial para moverte sobre dos ruedas.'],
                             ];
                         @endphp

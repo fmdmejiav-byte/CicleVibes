@@ -33,6 +33,7 @@ class RegisteredUserController extends Controller
             'telefono' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'accept_terms' => ['required', 'accepted'],
         ]);
 
         $usuarioRol = Rol::firstOrCreate(['nombre' => 'Usuario']);

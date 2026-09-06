@@ -70,13 +70,13 @@
                             <span class="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(0,229,255,0.3)] bg-[rgba(0,229,255,0.1)] text-[#00e5ff]">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
                             </span>
-                            Registra tu bicicleta y sus datos
+                            Navega con indicaciones paso a paso
                         </li>
                         <li class="flex items-center gap-3">
                             <span class="flex h-7 w-7 items-center justify-center rounded-full border border-[rgba(255,159,67,0.3)] bg-[rgba(255,159,67,0.1)] text-[#ff9f43]">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
                             </span>
-                            Reporta incidentes y mantente seguro
+                            Prioriza las ciclorrutas de la ciudad
                         </li>
                     </ul>
                 </div>

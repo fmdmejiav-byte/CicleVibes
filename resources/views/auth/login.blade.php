@@ -32,7 +32,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5" x-data="{ show: false, loading: false, remember: false }" @submit="loading = true">
+        <form method="POST" action="{{ route('login') }}" class="mt-6 space-y-5" x-data="{ show: false, loading: false, remember: false, termsOpen: false }" @submit="loading = true">
             @csrf
 
             <!-- Email -->
@@ -120,6 +120,16 @@
                     </span>
                 </button>
             </div>
+
+            <!-- Acceso a Términos y Política de Datos -->
+            <p class="text-center text-xs leading-relaxed text-[#6f817a]">
+                Al iniciar sesión, los datos de tu cuenta se tratan conforme a la
+                <button type="button" @click="termsOpen = true" class="link-neon inline font-semibold">Política de Tratamiento de Datos</button>
+                y a los
+                <button type="button" @click="termsOpen = true" class="link-neon inline font-semibold">Términos y Condiciones</button>.
+            </p>
+
+            @include('auth.partials._terms-modal')
         </form>
 
         <p class="mt-8 text-center text-sm text-[#a7b8b2]">

@@ -4,60 +4,87 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PasswordResetService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
-    /**
-     * Display the password reset view.
-     */
-    public function create(Request $request): View
+    public function __construct(private readonly PasswordResetService $service)
     {
-        return view('auth.reset-password', ['request' => $request]);
     }
 
-    /**
-     * Handle an incoming new password request.
-     *
-     * @throws ValidationException
-     */
+    public function create(Request $request): View|RedirectResponse
+    {
+        if (! $this->isAuthorized($request)) {
+            return redirect()
+                ->route('password.request')
+                ->withErrors(['email' => __('La sesión ha caducado. Solicita un nuevo código.')]);
+        }
+
+        return view('auth.reset-password');
+    }
+
     public function store(Request $request): RedirectResponse
     {
+        if (! $this->isAuthorized($request)) {
+            return redirect()
+                ->route('password.request')
+                ->withErrors(['email' => __('La sesión ha caducado. Solicita un nuevo código.')]);
+        }
+
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $email = $request->session()->get('password_reset_email');
 
-                event(new PasswordReset($user));
-            }
-        );
+        $user = User::where('email', $email)->first();
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __('Tu contraseña fue restablecida correctamente. Ya puedes iniciar sesión.'))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __('Este enlace de restablecimiento no es válido o ha expirado. Solicita uno nuevo.')]);
+        if (! $user) {
+            return redirect()
+                ->route('password.request')
+                ->withErrors(['email' => __('No fue posible restablecer la contraseña. Solicita un nuevo código.')]);
+        }
+
+        $user->forceFill([
+            'password' => Hash::make($request->password),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        event(new PasswordReset($user));
+
+        $this->service->revokeActiveCodes($user);
+
+        $request->session()->forget([
+            'password_reset_email',
+            'password_reset_code_expires_at',
+            'password_reset_verified',
+            'password_reset_verified_at',
+        ]);
+
+        return redirect()
+            ->route('login')
+            ->with('status', __('Tu contraseña fue restablecida correctamente. Ya puedes iniciar sesión.'));
+    }
+
+    private function isAuthorized(Request $request): bool
+    {
+        if ($request->session()->get('password_reset_verified') !== true) {
+            return false;
+        }
+
+        if (! is_string($request->session()->get('password_reset_email'))) {
+            return false;
+        }
+
+        $verifiedAt = (int) $request->session()->get('password_reset_verified_at', 0);
+
+        return now()->timestamp - $verifiedAt <= PasswordResetService::VERIFIED_TTL_SECONDS;
     }
 }

@@ -4,51 +4,56 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\PasswordResetService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class PasswordResetLinkController extends Controller
 {
-    /**
-     * Display the password reset link request view.
-     */
+    public function __construct(private readonly PasswordResetService $service)
+    {
+    }
+
     public function create(): View
     {
         return view('auth.forgot-password');
     }
 
-    /**
-     * Handle an incoming password reset link request.
-     *
-     * @throws ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
         ]);
 
-        // Solo se envía el enlace si la cuenta tiene contraseña local. Las
-        // cuentas creadas con "Continuar con Google" no tienen contraseña y
-        // no deben recibir un enlace de restablecimiento. La respuesta es
-        // siempre la misma para no revelar si el correo está registrado.
-        $user = User::where('email', $request->email)->first();
+        $email = Str::lower(trim($request->email));
 
-        if ($user && $user->hasPassword()) {
-            $status = Password::sendResetLink($request->only('email'));
+        $key = 'password-reset-request:'.$request->ip().'|'.$email;
 
-            if ($status !== Password::RESET_LINK_SENT) {
-                Log::warning('No se pudo enviar el enlace de restablecimiento de contraseña', [
-                    'email' => $request->email,
-                    'status' => $status,
-                ]);
-            }
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            return back()
+                ->withErrors(['email' => __('Demasiados intentos. Espera un momento antes de volver a intentarlo.')])
+                ->withInput($request->only('email'));
         }
 
-        return back()->with('status', __('Si existe una cuenta asociada a este correo, recibirás un enlace para restablecer tu contraseña.'));
+        RateLimiter::hit($key, 60);
+
+        $user = User::where('email', $email)->first();
+
+        $request->session()->put([
+            'password_reset_email' => $email,
+            'password_reset_code_expires_at' => now()->addMinutes(PasswordResetService::CODE_TTL_MINUTES)->timestamp,
+        ]);
+        $request->session()->forget(['password_reset_verified', 'password_reset_verified_at']);
+
+        if ($user && $user->hasPassword()) {
+            $this->service->createAndSend($user);
+        }
+
+        return redirect()
+            ->route('password.verify')
+            ->with('status', __('Si existe una cuenta asociada a este correo, recibirás un código de seguridad para restablecer tu contraseña.'));
     }
 }

@@ -2,7 +2,7 @@
 
 use App\Models\Rol;
 use App\Models\User;
-use App\Notifications\ResetPasswordNotification;
+use App\Notifications\PasswordResetCodeNotification;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\InvalidStateException;
@@ -143,7 +143,7 @@ test('rechaza una respuesta de Google sin correo válido', function () {
     expect(User::where('email', 'not-an-email')->exists())->toBeFalse();
 });
 
-test('no envía enlace de recuperación a cuentas que solo usan Google', function () {
+test('no envía código de recuperación a cuentas que solo usan Google', function () {
     Notification::fake();
 
     $user = User::factory()->create([
@@ -155,7 +155,9 @@ test('no envía enlace de recuperación a cuentas que solo usan Google', functio
     $response = $this->post('/forgot-password', ['email' => $user->email]);
 
     // Respuesta genérica: no revela si el correo está registrado.
-    $response->assertSessionHas('status');
+    $response
+        ->assertRedirect(route('password.verify'))
+        ->assertSessionHas('status');
     Notification::assertNothingSent();
 });
 
@@ -164,16 +166,18 @@ test('recuperación con cuenta Google responde igual para correos inexistentes',
 
     $response = $this->post('/forgot-password', ['email' => 'no-existe@example.com']);
 
-    $response->assertSessionHas('status');
+    $response
+        ->assertRedirect(route('password.verify'))
+        ->assertSessionHas('status');
     Notification::assertNothingSent();
 });
 
-test('envía enlace de recuperación a cuentas con contraseña local', function () {
+test('envía código de recuperación a cuentas con contraseña local', function () {
     Notification::fake();
 
     $user = User::factory()->create(['password' => bcrypt('password')]);
 
     $this->post('/forgot-password', ['email' => $user->email]);
 
-    Notification::assertSentTo($user, ResetPasswordNotification::class);
+    Notification::assertSentTo($user, PasswordResetCodeNotification::class);
 });

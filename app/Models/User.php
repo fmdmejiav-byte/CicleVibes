@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,16 +56,6 @@ class User extends Authenticatable
     public function hasPassword(): bool
     {
         return $this->password !== null;
-    }
-
-    /**
-     * Define la notificación de restablecimiento de contraseña de CicleVibes.
-     *
-     * @param  string  $token
-     */
-    public function sendPasswordResetNotification($token): void
-    {
-        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**
@@ -131,5 +120,13 @@ class User extends Authenticatable
     public function notificaciones(): HasMany
     {
         return $this->hasMany(Notificacion::class);
+    }
+
+    /**
+     * Un usuario puede tener varios códigos de recuperación de contraseña.
+     */
+    public function passwordResetCodes(): HasMany
+    {
+        return $this->hasMany(PasswordResetCode::class);
     }
 }

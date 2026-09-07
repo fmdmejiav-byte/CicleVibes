@@ -2,7 +2,7 @@
     <div class="cv-card p-8 sm:p-10">
         <h2 class="text-2xl font-extrabold text-[#f1fff9]">Recuperar contraseña</h2>
         <p class="mt-1.5 text-sm text-[#a7b8b2]">
-            {{ __('¿Olvidaste tu contraseña? No hay problema. Indícanos tu correo y te enviaremos un enlace para restablecerla.') }}
+            {{ __('¿Olvidaste tu contraseña? No hay problema. Indícanos tu correo y te enviaremos un código de seguridad de 6 dígitos para restablecerla.') }}
         </p>
 
         <!-- Session Status -->
@@ -20,7 +20,7 @@
 
             <div>
                 <x-primary-button class="w-full justify-center">
-                    Enviar enlace de recuperación
+                    Enviar código de recuperación
                 </x-primary-button>
             </div>
         </form>

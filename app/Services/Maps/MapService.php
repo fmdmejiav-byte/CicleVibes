@@ -3,6 +3,7 @@
 namespace App\Services\Maps;
 
 use App\Enums\EstadoBicicleta;
+use App\Enums\RouteProfile;
 use App\Models\Bicicleta;
 
 /**
@@ -66,6 +67,36 @@ class MapService
             'osrm_profile' => (string) config('services.map.osrm_profile', 'cycling'),
             'routing_driver' => (string) config('services.map.routing_driver', 'osrm'),
             'alternatives_count' => (int) config('services.map.alternatives_count', 3),
+            'profiles' => $this->profilesConfig(),
+            'default_profile' => (string) config('services.map.default_profile', 'fastest'),
+            'profiles_help' => 'Selecciona el criterio: rapidez, distancia, esfuerzo, tranquilidad o seguridad.',
         ];
+    }
+
+    /**
+     * Perfiles de ruta ofrecidos al frontend, validados y presentables.
+     *
+     * @return array<int, array{key: string, label: string, emoji: string, description: string}>
+     */
+    protected function profilesConfig(): array
+    {
+        $keys = array_values(array_filter(
+            (array) config('services.map.profiles', []),
+            fn (string $key) => RouteProfile::tryFromMixed($key) !== null
+        ));
+
+        if ($keys === []) {
+            $keys = RouteProfile::allowedKeys();
+        }
+
+        return array_map(
+            fn (string $key) => [
+                'key' => RouteProfile::from($key)->value,
+                'label' => RouteProfile::from($key)->label(),
+                'emoji' => RouteProfile::from($key)->emoji(),
+                'description' => RouteProfile::from($key)->description(),
+            ],
+            $keys
+        );
     }
 }

@@ -70,17 +70,33 @@ class GraphHopperRoutingDriver implements BicycleRoutingDriver
         $index = 0;
         foreach ($payload['paths'] as $path) {
             $index++;
+
+            $rawPoints = $path['points']['coordinates'] ?? [];
+            $coordinates = $this->normalizeCoordinates($rawPoints);
+            $elevations = $this->extractElevations($rawPoints);
+
+            // GraphHopper con perfil de elevación devuelve 'ascend' y
+            // 'descend' reales (metros) y la elevación por punto en las
+            // coordenadas. Si el proveedor no las entrega, quedan a null.
+            $ascent = isset($path['ascend']) ? round((float) $path['ascend'], 1) : null;
+            $descent = isset($path['descend']) ? round((float) $path['descend'], 1) : null;
+            $elevationAvailable = $ascent !== null || $elevations !== null;
+
             $routes[] = [
                 'id' => $index,
                 'distance_m' => (float) ($path['distance'] ?? 0),
                 'duration_seconds' => (float) (($path['time'] ?? 0) / 1000),
                 'distance_km' => round(((float) ($path['distance'] ?? 0)) / 1000, 2),
                 'duration_min' => (int) round(((float) ($path['time'] ?? 0)) / 60000),
-                'coordinates' => $this->normalizeCoordinates($path['points']['coordinates'] ?? []),
+                'coordinates' => $coordinates,
                 'steps' => $this->buildSteps($path['instructions'] ?? []),
                 'summary' => (string) ($path['description'] ?? ($path['descend'] ?? 'Ruta para bicicleta')),
                 'profile' => $this->profile,
                 'driver' => $this->name(),
+                'elevation_available' => $elevationAvailable,
+                'elevations' => $elevations,
+                'ascent_m' => $ascent,
+                'descent_m' => $descent,
             ];
         }
 
@@ -102,6 +118,25 @@ class GraphHopperRoutingDriver implements BicycleRoutingDriver
         }
 
         return $coordinates;
+    }
+
+    /**
+     * Extrae los valores de elevación reales (metros) si el proveedor los
+     * incluye como tercer componente de cada coordenada; null si no los hay.
+     *
+     * @return array<int, float>|null
+     */
+    protected function extractElevations(array $points): ?array
+    {
+        $elevations = [];
+        foreach ($points as $point) {
+            if (! array_key_exists(2, $point) || ! is_numeric($point[2])) {
+                return null;
+            }
+            $elevations[] = (float) $point[2];
+        }
+
+        return $elevations === [] ? null : $elevations;
     }
 
     /**

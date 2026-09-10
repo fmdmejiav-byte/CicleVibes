@@ -70,6 +70,14 @@ class OsrmRoutingDriver implements BicycleRoutingDriver
                 'summary' => $this->summarize($steps),
                 'profile' => $this->profile,
                 'driver' => $this->name(),
+                // Datos de elevación: el OSRM público (router.project-osrm.org)
+                // no entrega elevación en 'overview=full', así que estos campos
+                // quedan a null (nunca se simulan). Si un servidor OSRM propio
+                // con datos de elevación los incluyera, podrían poblarse aquí.
+                'elevation_available' => false,
+                'elevations' => null,
+                'ascent_m' => null,
+                'descent_m' => null,
             ];
             $routes[] = $this->coherentDuration($route);
         }

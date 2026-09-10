@@ -361,12 +361,12 @@ function CicleMap(config) {
         if (d) setOrigin(d);
     }
 
-    // ------------------------- Rutas alternativas -------------------------
+    // ------------------------- Rutas por perfil (planificador inteligente) -------------------------
     function isValidPoint(p) {
         return p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
     }
 
-    function calculateAlternatives() {
+    function calculateProfiles() {
         const app = payload();
 
         if (!isValidPoint(app.origin)) {
@@ -396,18 +396,26 @@ function CicleMap(config) {
         };
 
         axios
-            .get('/api/maps/alternatives', { params: requestParams })
+            .get('/api/maps/profiles', { params: requestParams })
             .then((res) => {
-                app.alternatives = res.data.routes || [];
-                app.ciclorutaConnection = Boolean(res.data.cicloruta_connection);
+                app.profileResults = res.data.profiles || [];
 
-                if (!app.alternatives.length) {
+                if (!app.profileResults.length) {
                     app.status = 'No se encontraron rutas para bicicleta.';
                     return;
                 }
 
-                app.selectedRouteId = app.alternatives[0].id;
-                renderAlternatives();
+                // Conexión ciclista completa solo si alguna ruta del pool por
+                // perfil recorrió realmente la red (via_ciclorutas).
+                app.ciclorutaConnection = app.priorizarCiclorutas && app.profileResults.some(
+                    (p) => p.route && p.route.via_ciclorutas === true
+                );
+
+                if (!app.profileResults.some((p) => p.profile === app.selectedProfile)) {
+                    app.selectedProfile = app.profileResults[0].profile;
+                }
+
+                renderProfileRoutes();
                 app.status = '';
                 app.mode = 'routes';
             })
@@ -421,16 +429,17 @@ function CicleMap(config) {
             });
     }
 
-    function renderAlternatives() {
+    function renderProfileRoutes() {
         const app = payload();
 
         clearRenderedRoutes();
 
-        (app.alternatives || []).forEach((route) => {
-            const coords = Array.isArray(route.coordinates)
-                ? route.coordinates.map((c) => [c[0], c[1]])
-                : [];
-            const isSelected = route.id === app.selectedRouteId;
+        (app.profileResults || []).forEach((item) => {
+            const route = item.route;
+            if (!route || !Array.isArray(route.coordinates) || route.coordinates.length < 2) return;
+
+            const coords = route.coordinates.map((c) => [c[0], c[1]]);
+            const isSelected = item.profile === app.selectedProfile;
 
             const layers = buildRouteLayers(coords, isSelected);
             layers.forEach((layer) => layer.addTo(map));
@@ -445,6 +454,14 @@ function CicleMap(config) {
         if (activeRouteLayer) {
             const bounds = activeRouteLayer.getBounds();
             map.fitBounds(bounds, { padding: [80, 80] });
+        }
+    }
+
+    function selectProfile(key) {
+        const app = payload();
+        app.selectedProfile = key;
+        if (app.mode === 'routes' && app.profileResults.length) {
+            renderProfileRoutes();
         }
     }
 
@@ -485,12 +502,6 @@ function CicleMap(config) {
         return [halo, core];
     }
 
-    function selectAlternative(id) {
-        const app = payload();
-        app.selectedRouteId = id;
-        renderAlternatives();
-    }
-
     function clearRenderedRoutes() {
         alternativeLayers.forEach((layer) => map.removeLayer(layer));
         alternativeLayers = [];
@@ -501,7 +512,8 @@ function CicleMap(config) {
     // ------------------------- Navegación (tipo Waze) -------------------------
     function startNavigation() {
         const app = payload();
-        if (!app.selectedRouteId) return;
+        const chosenRoute = selectedRoute();
+        if (!chosenRoute) return;
         if (!('geolocation' in navigator)) {
             app.status = 'Tu navegador no soporta geolocalización.';
             return;
@@ -510,7 +522,6 @@ function CicleMap(config) {
         app.mode = 'navigating';
         app.navigating = true;
 
-        const chosenRoute = app.alternatives.find((r) => r.id === app.selectedRouteId) || null;
         applyRouteFixes(chosenRoute);
         app.routeInfo = chosenRoute;
 
@@ -630,16 +641,23 @@ function CicleMap(config) {
                     origin_lng: userLocation.lng,
                     dest_lat: app.destination.lat,
                     dest_lng: app.destination.lng,
+                    profile: app.selectedProfile || 'fastest',
+                    priorize_ciclorutas: app.priorizarCiclorutas ? 1 : 0,
                 },
             })
             .then((res) => {
                 const route = res.data.route;
                 applyRouteFixes(route);
                 app.routeInfo = route;
-                app.alternatives = [
-                    { ...route, label: 'Ruta actualizada', id: route.id || 1 },
+                app.selectedProfile = route.profile || app.selectedProfile;
+                app.profileResults = [
+                    {
+                        profile: app.selectedProfile,
+                        label: route.profile || app.selectedProfile,
+                        emoji: '',
+                        route,
+                    },
                 ];
-                app.selectedRouteId = (route.id || 1);
                 app.deviating = false;
                 deviationCounter = 0;
                 clearRenderedRoutes();
@@ -975,7 +993,7 @@ function CicleMap(config) {
         const app = payload();
         app.priorizarCiclorutas = !app.priorizarCiclorutas;
         if (app.mode === 'routes' && app.origin && app.destination) {
-            calculateAlternatives();
+            calculateProfiles();
         }
     }
 
@@ -984,8 +1002,8 @@ function CicleMap(config) {
         const app = payload();
         stopNavigation();
         clearRenderedRoutes();
-        app.alternatives = [];
-        app.selectedRouteId = null;
+        app.profileResults = [];
+        app.selectedProfile = config.default_profile || 'fastest';
         app.routeInfo = null;
         app.ciclorutaConnection = false;
         app.origin = null;
@@ -1035,8 +1053,8 @@ function CicleMap(config) {
         origin: null,
         destination: null,
         mode: 'plan', // plan | routes | pick | navigating
-        alternatives: [],
-        selectedRouteId: null,
+        profileResults: [],
+        selectedProfile: config.default_profile || 'fastest',
         routeInfo: null,
         routing: false,
         currentStep: 0,
@@ -1060,6 +1078,9 @@ function CicleMap(config) {
         // Planificación
         priorizarCiclorutas: true,
         ciclorutaConnection: false,
+
+        // Perfiles ofrecidos por el backend (config del mapa)
+        profilesConfig: config.profiles || [],
 
         init() {
             return init();
@@ -1085,8 +1106,8 @@ function CicleMap(config) {
         reverseOriginDestination,
 
         // Rutas
-        calculateAlternatives,
-        selectAlternative,
+        calculateProfiles,
+        selectProfile,
         clearRoute,
 
         // Navegación
@@ -1140,7 +1161,37 @@ function CicleMap(config) {
             return point ? (point.label || point.name || 'Punto seleccionado') : 'Define un destino';
         },
         selectedRoute() {
-            return this.alternatives.find((r) => r.id === this.selectedRouteId) || null;
+            const item = (this.profileResults || []).find((p) => p.profile === this.selectedProfile);
+            if (!item) return null;
+            return item.route || null;
+        },
+        routeBadge(route) {
+            if (!route) return 'Sin datos';
+            if (route.via_ciclorutas) return 'Ciclorrutas + OSRM';
+            return route.driver === 'graphhopper' ? 'GraphHopper' : 'OSRM';
+        },
+        // Safety Score (fase 2): el chip usa SOLO el score real del backend
+        // (safety_score 0-100 o null cuando la información es insuficiente).
+        safetyChipClass(metadata) {
+            if (!metadata || metadata.safety_score === null || metadata.safety_score === undefined) {
+                return 'cv-safety-chip--none';
+            }
+            const score = Number(metadata.safety_score);
+            if (score >= 70) return 'cv-safety-chip--good';
+            if (score >= 40) return 'cv-safety-chip--mid';
+            return 'cv-safety-chip--risk';
+        },
+        safetyChipText(metadata) {
+            if (!metadata || metadata.safety_score === null || metadata.safety_score === undefined) {
+                return 'Información de seguridad insuficiente';
+            }
+            return `Seguridad ${Math.round(Number(metadata.safety_score))}/100`;
+        },
+        formatAscent(value) {
+            if (value === null || value === undefined || !Number.isFinite(Number(value))) return '';
+            const v = Math.round(Number(value));
+            if (v === 0) return '± 0 m';
+            return `+${v} m`;
         },
         formatDist(meters) {
             const m = Number(meters) || 0;

@@ -30,6 +30,8 @@ Route::middleware('auth')->group(function () {
         ->middleware(['throttle:30,1']);
     Route::get('/api/maps/alternatives', [MapController::class, 'alternatives'])->name('maps.alternatives')
         ->middleware(['throttle:30,1']);
+    Route::get('/api/maps/profiles', [MapController::class, 'profiles'])->name('maps.profiles')
+        ->middleware(['throttle:30,1']);
     Route::get('/api/maps/recalculate', [MapController::class, 'recalculate'])->name('maps.recalculate')
         ->middleware(['throttle:20,1']);
     Route::get('/api/maps/cyclorutas', [MapController::class, 'cyclorutas'])->name('maps.cyclorutas')

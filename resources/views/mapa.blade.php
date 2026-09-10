@@ -167,6 +167,21 @@
                                 </span>
                             </div>
 
+                            <!-- Selector de perfil de ruta -->
+                            <div x-show="mode !== 'navigating'" x-cloak>
+                                <p class="text-[11px] font-bold uppercase tracking-wider text-[#a7b8b2]">Perfil de ruta</p>
+                                <div class="profile-scroll mt-2 flex gap-2 overflow-x-auto pb-1">
+                                    <template x-for="p in profilesConfig" :key="p.key">
+                                        <button @click="selectProfile(p.key)" :title="p.description"
+                                            class="cv-profile-chip"
+                                            :class="selectedProfile === p.key ? 'is-active' : ''">
+                                            <span x-text="p.emoji"></span>
+                                            <span x-text="p.label"></span>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
                             <!-- Help de clic en el mapa -->
                             <div x-show="pickHint" x-cloak class="rounded-2xl border border-[rgba(0,229,255,0.25)] bg-[rgba(0,229,255,0.08)] px-4 py-3 text-center text-sm font-semibold text-[#00e5ff]">
                                 <span x-text="pickHint"></span>
@@ -198,43 +213,82 @@
                                 <button @click="clearRoute()" class="flex-1 rounded-xl border border-[rgba(255,77,90,0.2)] bg-[rgba(9,24,20,0.5)] px-3 py-2 text-xs font-semibold text-[#a7b8b2] transition hover:border-[#ff4d5a] hover:text-[#ff4d5a]">Limpiar</button>
                             </div>
 
-                            <!-- Alternativas -->
-                            <div x-show="mode === 'routes' && alternatives.length > 0" x-cloak class="space-y-2">
+                            <!-- Resultados por perfil -->
+                            <div x-show="mode === 'routes' && profileResults.length > 0" x-cloak class="space-y-2">
                                 <div x-show="priorizarCiclorutas && !ciclorutaConnection" x-cloak class="rounded-2xl border border-[rgba(255,159,67,0.35)] bg-[rgba(255,159,67,0.08)] p-3">
                                     <p class="text-sm font-bold text-[#ffb25d]">No existe una conexión ciclista completa con los datos disponibles.</p>
                                     <p class="mt-0.5 text-xs text-[#a7b8b2]">Mostramos la alternativa por calles (OSRM) para que puedas llegar igualmente.</p>
                                 </div>
-                                <template x-for="(r, i) in alternatives" :key="r.id">
-                                    <button @click="selectAlternative(r.id)"
+                                <template x-for="item in profileResults" :key="item.profile">
+                                    <button @click="selectProfile(item.profile)"
                                         class="flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition"
-                                        :class="selectedRouteId === r.id ? 'border-[rgba(0,255,136,0.5)] bg-[rgba(0,255,136,0.07)] shadow-[0_0_18px_rgba(0,255,136,0.15)]' : 'cv-glass-soft hover:border-[rgba(0,255,136,0.35)]'">
-                                        <span class="cv-step-num mt-0.5" :class="selectedRouteId === r.id ? 'cv-step-num--active' : ''">
-                                            <span x-text="String(i + 1).padStart(2, '0')"></span>
+                                        :class="selectedProfile === item.profile ? 'border-[rgba(0,255,136,0.5)] bg-[rgba(0,255,136,0.07)] shadow-[0_0_18px_rgba(0,255,136,0.15)]' : 'cv-glass-soft hover:border-[rgba(0,255,136,0.35)]'">
+                                        <span x-show="item.route" class="cv-step-num mt-0.5"
+                                            :class="selectedProfile === item.profile ? 'cv-step-num--active' : ''">
+                                            <span x-text="selectedProfile === item.profile ? '✓' : item.emoji"></span>
+                                        </span>
+                                        <span x-show="!item.route" class="cv-step-num mt-0.5 !bg-[rgba(255,77,90,0.12)] !text-[#ff4d5a]">
+                                            <span x-text="item.emoji"></span>
                                         </span>
                                         <span class="min-w-0 flex-1">
                                             <span class="flex items-center justify-between gap-2">
-                                                <span class="truncate font-bold text-[#f1fff9]" x-text="r.label"></span>
-                                                <span class="flex-shrink-0 cv-badge" :class="r.via_ciclorutas ? '' : 'cv-badge--cyan'"
-                                                    x-text="r.via_ciclorutas ? 'Ciclorrutas + OSRM' : (r.driver === 'graphhopper' ? 'GraphHopper' : 'OSRM')"></span>
+                                                <span class="truncate font-bold text-[#f1fff9]" x-text="item.label"></span>
+                                                <template x-if="item.route">
+                                                    <span class="flex-shrink-0 cv-badge" :class="item.route.via_ciclorutas ? '' : 'cv-badge--cyan'"
+                                                        x-text="routeBadge(item.route)"></span>
+                                                </template>
                                             </span>
-                                            <span class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                                                <span class="font-bold text-[#00e5ff]" x-text="formatKm(r.distance_km)"></span>
-                                                <span class="text-[#5f726a]">·</span>
-                                                <span class="font-semibold text-[#d9e8e0]" x-text="formatDur(r.duration_min)"></span>
-                                                <span class="text-[#5f726a]">·</span>
-                                                <span class="font-semibold text-[#00ff88]" x-text="routeAvgSpeed(r)"></span>
-                                            </span>
-                                            <span x-show="r.cicloruta_coverage_pct > 0" x-cloak class="mt-1.5 block space-y-1">
+                                            <template x-if="item.route">
+                                                <span class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                                                    <span class="font-bold text-[#00e5ff]" x-text="formatKm(item.route.distance_km)"></span>
+                                                    <span class="text-[#5f726a]">·</span>
+                                                    <span class="font-semibold text-[#d9e8e0]" x-text="formatDur(item.route.duration_min)"></span>
+                                                    <span class="text-[#5f726a]">·</span>
+                                                    <span class="font-semibold text-[#00ff88]" x-text="routeAvgSpeed(item.route)"></span>
+                                                    <template x-if="item.route.elevation_available && item.route.ascent_m !== null">
+                                                        <span>
+                                                            <span class="text-[#5f726a]">·</span>
+                                                            <span class="font-semibold text-[#ffb25d]" x-text="formatAscent(item.route.ascent_m)"></span>
+                                                        </span>
+                                                    </template>
+                                                </span>
+                                            </template>
+                                            <template x-if="item.route.note">
+                                                <span class="mt-1 block text-xs text-[#a7b8b2]" x-text="item.route.note"></span>
+                                            </template>
+                                            <span x-show="item.route && item.route.cicloruta_coverage_pct > 0" x-cloak class="mt-1.5 block space-y-1">
                                                 <span class="flex items-center gap-1.5 text-xs font-semibold text-[#00e5ff]">
                                                     <span class="h-1.5 w-24 overflow-hidden rounded-full bg-[rgba(0,229,255,0.15)]">
-                                                        <span class="block h-full rounded-full bg-[#00e5ff]" :style="'width: ' + r.cicloruta_coverage_pct + '%'"></span>
+                                                        <span class="block h-full rounded-full bg-[#00e5ff]" :style="'width: ' + item.route.cicloruta_coverage_pct + '%'"></span>
                                                     </span>
-                                                    <span x-text="r.cicloruta_coverage_pct + '% del trayecto por ciclorruta'"></span>
+                                                    <span x-text="item.route.cicloruta_coverage_pct + '% del trayecto por ciclorruta'"></span>
                                                 </span>
-                                                <span x-show="r.ciclorutas_used && r.ciclorutas_used.length" class="block text-xs text-[#a7b8b2]">
+                                                <span x-show="item.route.ciclorutas_used && item.route.ciclorutas_used.length" class="block text-xs text-[#a7b8b2]">
                                                     <span class="font-semibold text-[#d9e8e0]">Ciclorrutas:</span>
-                                                    <span x-text="r.ciclorutas_used.join(' · ')"></span>
+                                                    <span x-text="item.route.ciclorutas_used.join(' · ')"></span>
                                                 </span>
+                                            </span>
+                                            <span x-show="item.route.metadata" class="mt-1.5 block space-y-1.5">
+                                                <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                    <span class="cv-safety-chip" :class="safetyChipClass(item.route.metadata)"
+                                                        x-text="safetyChipText(item.route.metadata)"></span>
+                                                    <template x-if="item.route.metadata.safety_score !== null">
+                                                        <span class="text-xs font-semibold text-[#9fb5ad]"
+                                                            x-text="'Confianza del análisis: ' + item.route.metadata.safety_confidence_label"></span>
+                                                    </template>
+                                                </span>
+                                                <template x-if="selectedProfile === item.profile && item.route.metadata.safety_explanation">
+                                                    <span class="block text-xs leading-relaxed text-[#a7b8b2]"
+                                                        x-text="item.route.metadata.safety_explanation"></span>
+                                                </template>
+                                                <template x-if="selectedProfile === item.profile && item.route.metadata.safety_signals && item.route.metadata.safety_signals.length">
+                                                    <span class="block text-xs text-[#a7b8b2]">
+                                                        <span class="font-semibold text-[#d9e8e0]">Datos disponibles:</span>
+                                                        <template x-for="s in item.route.metadata.safety_signals" :key="s.type">
+                                                            <span class="block" x-text="'• ' + s.name + ': ' + Math.round(s.score) + '/100'"></span>
+                                                        </template>
+                                                    </span>
+                                                </template>
                                             </span>
                                         </span>
                                     </button>
@@ -243,7 +297,7 @@
 
                             <!-- Botón Calcular / Iniciar -->
                             <div class="pt-1">
-                                <template x-if="mode === 'routes' && alternatives.length > 0">
+                                <template x-if="mode === 'routes' && selectedRoute()">
                                     <button @click="startNavigation()"
                                         class="cv-neon-button w-full">
                                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
@@ -251,7 +305,7 @@
                                     </button>
                                 </template>
                                 <template x-if="mode !== 'routes'">
-                                    <button @click="calculateAlternatives()"
+                                    <button @click="calculateProfiles()"
                                         :disabled="!origin || !destination || routing"
                                         class="cv-neon-button w-full" :class="(!origin || !destination || routing) ? '!shadow-none' : ''">
                                         <span x-show="!routing" class="inline-flex items-center gap-2">

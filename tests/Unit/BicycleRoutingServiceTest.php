@@ -108,3 +108,106 @@ test('la ordenación ponderada respeta el equilibrio cuando la diferencia es peq
     expect($routes[0]['distance_m'])->toBe(1000.0)
         ->and($routes[0]['cicloruta_coverage_pct'])->toBe(0);
 });
+
+test('routesForProfile devuelve una ruta etiquetada con el perfil y metadatos', function () {
+    $service = new BicycleRoutingService(
+        new CyclingFakeDriver([
+            cyclingBaseRoute([
+                'distance_m' => 1000,
+                'duration_seconds' => 60,
+                'coordinates' => [[11.02, -74.78], [11.025, -74.78]],
+            ]),
+        ]),
+        new CiclorutaService(__DIR__.'/../Fixtures/ciclorutas-test.geojson')
+    );
+
+    $route = $service->routesForProfile(
+        ['lat' => 11.02, 'lng' => -74.78],
+        ['lat' => 11.025, 'lng' => -74.78],
+        'fastest'
+    );
+
+    expect($route)->not->toBeNull()
+        ->and($route['profile'])->toBe('fastest')
+        ->and($route['label'])->toContain('Más rápida')
+        ->and($route['metadata']['elevation_available'])->toBeFalse()
+        ->and($route['metadata']['ascent_m'])->toBeNull()
+        ->and($route['metadata']['safety_score'])->toBeNull()
+        ->and($route['metadata']['cicloruta_coverage_pct'])->toBe(0);
+});
+
+test('profiles devuelve una entrada por perfil y cada una con su ruta', function () {
+    $service = new BicycleRoutingService(
+        new CyclingFakeDriver([
+            // La ruta rápida (menor duración) es la larga; la corta es la lenta.
+            cyclingBaseRoute([
+                'distance_m' => 2000,
+                'duration_seconds' => 60,
+                'coordinates' => [[11.02, -74.78], [11.03, -74.79], [11.025, -74.78]],
+            ]),
+            cyclingBaseRoute([
+                'distance_m' => 1000,
+                'duration_seconds' => 120,
+                'coordinates' => [[11.02, -74.78], [11.025, -74.78]],
+            ]),
+        ]),
+        new CiclorutaService(__DIR__.'/../Fixtures/ciclorutas-test.geojson')
+    );
+
+    $results = $service->profiles(
+        ['lat' => 11.02, 'lng' => -74.78],
+        ['lat' => 11.025, 'lng' => -74.78],
+        ['fastest', 'shortest']
+    );
+
+    expect($results)->toHaveCount(2);
+    expect($results[0]['profile'])->toBe('fastest')
+        ->and($results[0]['route']['distance_m'])->toBe(2000.0);
+    expect($results[1]['profile'])->toBe('shortest')
+        ->and($results[1]['route']['distance_m'])->toBe(1000.0);
+
+    foreach ($results as $entry) {
+        expect($entry)->toHaveKeys(['profile', 'label', 'emoji', 'description', 'route'])
+            ->and($entry['route']['profile'])->toBe($entry['profile']);
+    }
+});
+
+test('profiles descarta candidatas sin geometría y no inventa rutas', function () {
+    $service = new BicycleRoutingService(
+        new CyclingFakeDriver([
+            cyclingBaseRoute(['distance_m' => 1000, 'duration_seconds' => 60]),
+        ]),
+        new CiclorutaService(__DIR__.'/../Fixtures/ciclorutas-test.geojson')
+    );
+
+    $results = $service->profiles(
+        ['lat' => 11.02, 'lng' => -74.78],
+        ['lat' => 11.025, 'lng' => -74.78],
+        ['fastest']
+    );
+
+    expect($results)->toHaveCount(1)
+        ->and($results[0]['route'])->toBeNull();
+});
+
+test('profiles ignora perfiles desconocidos de la lista solicitada', function () {
+    $service = new BicycleRoutingService(
+        new CyclingFakeDriver([
+            cyclingBaseRoute([
+                'distance_m' => 1000,
+                'duration_seconds' => 60,
+                'coordinates' => [[11.02, -74.78], [11.025, -74.78]],
+            ]),
+        ]),
+        new CiclorutaService(__DIR__.'/../Fixtures/ciclorutas-test.geojson')
+    );
+
+    $results = $service->profiles(
+        ['lat' => 11.02, 'lng' => -74.78],
+        ['lat' => 11.025, 'lng' => -74.78],
+        ['fastest', 'no-existe']
+    );
+
+    expect($results)->toHaveCount(1)
+        ->and($results[0]['profile'])->toBe('fastest');
+});

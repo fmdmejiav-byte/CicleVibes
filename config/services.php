@@ -113,6 +113,16 @@ return [
         // Número máximo de alternativas que se muestran al usuario.
         'alternatives_count' => (int) env('MAP_ALTERNATIVES_COUNT', 3),
 
+        // Perfiles del planificador inteligente de rutas (fase 1).
+        // Lista separada por comas de los perfiles ofrecidos al usuario.
+        // Orden: fastest,shortest,easiest,scenic,safest.
+        'profiles' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('MAP_PROFILES', 'fastest,shortest,easiest,scenic,safest'))
+        ))),
+        // Perfil preseleccionado en el frontend.
+        'default_profile' => env('MAP_DEFAULT_PROFILE', 'fastest'),
+
         // Ruta "Priorizar ciclorrutas": factor máximo admitido de desviación
         // de la ruta que usa la red de ciclorrutas respecto a la ruta directa.
         // 1.5 = la ruta por ciclorrutas puede ser hasta 50% más larga antes de

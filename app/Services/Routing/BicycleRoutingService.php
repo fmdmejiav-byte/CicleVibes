@@ -2,7 +2,10 @@
 
 namespace App\Services\Routing;
 
+use App\Contracts\SafetyScoringService;
+use App\Enums\RouteProfile;
 use App\Services\Maps\CiclorutaService;
+use App\Services\Routing\Safety\InfrastructureSafetyScoringService;
 
 /**
  * Servicio de enrutamiento para bicicletas.
@@ -29,10 +32,22 @@ use App\Services\Maps\CiclorutaService;
  */
 class BicycleRoutingService
 {
+    protected RouteProfileRanker $ranker;
+
+    protected SafetyScoringService $safety;
+
     public function __construct(
         protected BicycleRoutingDriver $driver,
         protected CiclorutaService $ciclorutas,
-    ) {}
+        ?RouteProfileRanker $ranker = null,
+        ?SafetyScoringService $safety = null,
+    ) {
+        // Los parámetros opcionales permiten construir el servicio en tests
+        // antiguos con solo (driver, ciclorutas). El contenedor resuelve los
+        // bindings cuando no se pasan.
+        $this->safety = $safety ?? new InfrastructureSafetyScoringService();
+        $this->ranker = $ranker ?? new RouteProfileRanker($this->safety);
+    }
 
     /**
      * Devuelve las rutas alternativas entre origen y destino, ya
@@ -46,7 +61,11 @@ class BicycleRoutingService
 
         $routes = [];
         foreach ($raw as $index => $route) {
-            $routes[] = $this->decorate($route, $index);
+            $route = $this->decorate($route, $index);
+            $this->normalizeForProfile($route);
+            $this->attachBaseMetadata($route);
+
+            $routes[] = $route;
         }
 
         return $routes;
@@ -81,6 +100,10 @@ class BicycleRoutingService
         }
 
         if ($candidate !== null) {
+            // La candidata por red no pasa por decorate() de routes(): se
+            // normaliza aquí para incluir los campos de elevación/metadata.
+            $this->normalizeForProfile($candidate);
+            $this->attachBaseMetadata($candidate);
             $routes[] = $candidate;
             $this->sortByCiclorutaPriority($routes);
 
@@ -658,5 +681,276 @@ class BicycleRoutingService
             2 => 'Ruta tranquila',
             default => 'Alternativa '.($index + 1),
         };
+    }
+
+    // ------------------------------------------------------------------
+    // Planificador inteligente por perfiles (FASE 1)
+    // ------------------------------------------------------------------
+
+    /**
+     * Calcula una ruta para un perfil concreto.
+     *
+     * Construye el pool común de candidatas reales y deja que la capa de
+     * criterios (RouteProfileRanker) elija la mejor para el perfil.
+     *
+     * @param  array<string, float>  $origin
+     * @param  array<string, float>  $destination
+     * @return array<string, mixed>|null
+     */
+    public function routesForProfile(
+        array $origin,
+        array $destination,
+        string|RouteProfile $profile,
+        ?int $alternatives = null,
+        bool $priorizeCiclorutas = false,
+    ): ?array {
+        $profile = RouteProfile::tryFromMixed($profile);
+        if ($profile === null) {
+            return null;
+        }
+
+        $pool = $this->candidatePool($origin, $destination, $alternatives, $priorizeCiclorutas);
+        $route = $this->ranker->preferred($profile, $pool);
+
+        if ($route === null) {
+            return null;
+        }
+
+        $route['profile'] = $profile->value;
+        $route['label'] = $profile->emoji().' '.$profile->label();
+        $route['metadata'] = $this->buildMetadata($route, $profile->value);
+
+        return $route;
+    }
+
+    /**
+     * Calcula todos los perfiles solicitados sobre el mismo pool de
+     * candidatas reales (una sola llamada al motor de rutas).
+     *
+     * Cada entrada devuelta lleva el perfil, su presentación y la ruta
+     * elegida (o null si el perfil no pudo resolverse con datos reales).
+     *
+     * @param  array<string, float>  $origin
+     * @param  array<string, float>  $destination
+     * @param  array<int, string>|array<int, RouteProfile>  $profiles
+     * @return array<int, array<string, mixed>>
+     */
+    public function profiles(
+        array $origin,
+        array $destination,
+        array $profiles = [],
+        ?int $alternatives = null,
+        bool $priorizeCiclorutas = false,
+    ): array {
+        // Normaliza y filtra la lista solicitada contra los perfiles válidos.
+        $requested = $profiles === []
+            ? RouteProfile::cases()
+            : array_values(array_filter($profiles, fn ($p) => RouteProfile::tryFromMixed($p) !== null));
+
+        $pool = $this->candidatePool($origin, $destination, $alternatives, $priorizeCiclorutas);
+
+        $results = [];
+        foreach ($requested as $requestedProfile) {
+            $profile = RouteProfile::tryFromMixed($requestedProfile);
+            if ($profile === null) {
+                continue;
+            }
+
+            $entry = [
+                'profile' => $profile->value,
+                'label' => $profile->label(),
+                'emoji' => $profile->emoji(),
+                'description' => $profile->description(),
+                'route' => null,
+            ];
+
+            $route = $this->ranker->preferred($profile, $pool);
+            if ($route !== null) {
+                $route['profile'] = $profile->value;
+                $route['label'] = $profile->emoji().' '.$profile->label();
+                $route['metadata'] = $this->buildMetadata($route, $profile->value);
+                $entry['route'] = $route;
+            }
+
+            $results[] = $entry;
+        }
+
+        return $results;
+    }
+
+    /**
+     * Pool común de candidatas reales para el planificador de perfiles.
+     *
+     * Candidatas:
+     *  1. Rutas del motor activo (OSRM/GraphHopper), que ya respeta las
+     *     restricciones de bicicleta;
+     *  2. si priorizeCiclorutas, la ruta por la red local de ciclorrutas
+     *     (viaCiclorutas o su variante encadenada) cuando es viable.
+     *
+     * Cada candidata se enriquece con métricas reales de infraestructura
+     * ciclista y con los campos normalizados (elevación nullable, etc.).
+     * Las candidatas sin geometría válida se descartan.
+     *
+     * @param  array<string, float>  $origin
+     * @param  array<string, float>  $destination
+     * @return array<int, array<string, mixed>>
+     */
+    protected function candidatePool(
+        array $origin,
+        array $destination,
+        ?int $alternatives,
+        bool $priorizeCiclorutas,
+    ): array {
+        $routes = $this->driver->routes($origin, $destination, $alternatives) ?? [];
+
+        $routes = array_values(array_filter(
+            $routes,
+            fn (array $route) => $this->hasGeometry($route)
+        ));
+
+        foreach ($routes as &$route) {
+            $this->attachCiclorutaMetrics($route);
+            $this->normalizeForProfile($route);
+            $this->attachBaseMetadata($route);
+        }
+        unset($route);
+
+        if ($priorizeCiclorutas) {
+            $directDistance = ! empty($routes)
+                ? (float) ($routes[0]['distance_m'] ?? 0)
+                : null;
+
+            $candidate = $this->viaCiclorutas($origin, $destination, $directDistance);
+            if ($candidate === null) {
+                $candidate = $this->chainedViaCiclorutas($origin, $destination, $directDistance);
+            }
+
+            if ($candidate !== null) {
+                $this->normalizeForProfile($candidate);
+                $this->attachBaseMetadata($candidate);
+                $routes[] = $candidate;
+            }
+        }
+
+        return $routes;
+    }
+
+    /**
+     * ¿La ruta tiene geometría mínima válida para dibujarse?
+     *
+     * @param  array<string, mixed>  $route
+     */
+    protected function hasGeometry(array $route): bool
+    {
+        $coordinates = $route['coordinates'] ?? [];
+
+        return is_array($coordinates) && count($coordinates) >= 2;
+    }
+
+    /**
+     * Normaliza los campos de elevación de una ruta.
+     *
+     * Solo se conservan valores reales del proveedor. Si no existen, los
+     * campos se dejan a null (nunca se simulan) y se marca elevation_available
+     * en false. slope_pct se deriva de datos reales (ascent real / distancia
+     * real) y únicamente cuando hay elevación real.
+     *
+     * @param  array<string, mixed>  $route
+     */
+    protected function normalizeForProfile(array &$route): void
+    {
+        $elevationAvailable = ($route['elevation_available'] ?? false) === true;
+        $route['elevation_available'] = $elevationAvailable;
+        $route['elevations'] = $route['elevations'] ?? null;
+
+        $route['ascent_m'] = isset($route['ascent_m']) && is_numeric($route['ascent_m'])
+            ? round((float) $route['ascent_m'], 1)
+            : null;
+
+        $route['descent_m'] = isset($route['descent_m']) && is_numeric($route['descent_m'])
+            ? round((float) $route['descent_m'], 1)
+            : null;
+
+        $distance = (float) ($route['distance_m'] ?? 0);
+        $route['slope_pct'] = ($elevationAvailable && $route['ascent_m'] !== null && $distance > 0)
+            ? round($route['ascent_m'] / $distance * 100, 2)
+            : null;
+    }
+
+    /**
+     * Metadatos base honestos de una ruta (sin perfil).
+     *
+     * @param  array<string, mixed>  $route
+     * @return array<string, mixed>
+     */
+    protected function attachBaseMetadata(array &$route): void
+    {
+        $route['metadata'] = $this->baseMetadata($route);
+    }
+
+    /**
+     * Metadatos de la ruta ya resuelta por un perfil.
+     *
+     * @param  array<string, mixed>  $route
+     * @return array<string, mixed>
+     */
+    protected function buildMetadata(array $route, ?string $profile): array
+    {
+        $metadata = $this->baseMetadata($route);
+        $notes = [];
+
+        if ($profile === RouteProfile::Easiest->value && ! $metadata['elevation_available']) {
+            $notes[] = 'El motor de rutas no entrega datos reales de elevación: el desnivel no se muestra y "Menor esfuerzo" usa la ruta ciclista del motor, que evita según OpenStreetMap las vías más empinadas. La arquitectura está preparada para elevación.';
+        }
+
+        if ($profile === RouteProfile::Safest->value) {
+            $notes[] = 'Safety Score real 0-100 calculado con datos verificables (red local de ciclorrutas, OpenStreetMap y siniestralidad oficial cuando está habilitada). Si la información disponible es insuficiente, no se publica una puntuación: se indica "Información de seguridad insuficiente" con su confianza.';
+        }
+
+        if ($profile === RouteProfile::Scenic->value && $metadata['cicloruta_coverage_pct'] === 0) {
+            $notes[] = 'Aún no se disponen de datos locales de tranquilidad (parques, jerarquía de vía); se prioriza la infraestructura ciclista real cuando existe.';
+        }
+
+        $metadata['notes'] = $notes;
+
+        return $metadata;
+    }
+
+    /**
+     * Metadatos comunes de cualquier ruta (estructura estable de fase 1).
+     *
+     * @param  array<string, mixed>  $route
+     * @return array<string, mixed>
+     */
+    protected function baseMetadata(array $route): array
+    {
+        // Evaluación de seguridad completa (fase 2): incluye el score real
+        // 0-100, su confianza, la explicación y las señales que lo sostienen.
+        // Nunca publica un número si los datos reales no lo respaldan.
+        $assessment = $this->safety->assessment($route);
+
+        return [
+            'elevation_available' => ($route['elevation_available'] ?? false) === true,
+            'ascent_m' => $route['ascent_m'] ?? null,
+            'descent_m' => $route['descent_m'] ?? null,
+            'slope_pct' => $route['slope_pct'] ?? null,
+            'cicloruta_coverage_pct' => (int) ($route['cicloruta_coverage_pct'] ?? 0),
+            'safety_score' => $assessment['score'] ?? null,
+            'safety_confidence' => $assessment['confidence'] ?? 0.0,
+            'safety_confidence_label' => $assessment['confidence_label'] ?? 'Baja',
+            'safety_explanation' => $assessment['explanation'] ?? null,
+            'safety_signals' => $assessment['signals'] ?? [],
+            'safety_sources' => $assessment['sources'] ?? $this->safety->sources(),
+            'safety' => $assessment,
+            'notes' => [],
+        ];
+    }
+
+    /**
+     * Servicio de seguridad activo (fase 2: Safety Score real 0-100).
+     */
+    public function safetyScoring(): SafetyScoringService
+    {
+        return $this->safety;
     }
 }

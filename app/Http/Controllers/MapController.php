@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RouteProfile;
 use App\Services\Maps\CiclorutaService;
 use App\Services\Maps\GeocodingService;
 use App\Services\Maps\MapService;
@@ -113,17 +114,108 @@ class MapController extends Controller
     }
 
     /**
+     * Calcula las rutas inteligentes por perfil (fase 1).
+     *
+     * Devuelve una ruta por perfil solicitado (fastest, shortest, easiest,
+     * scenic, safest), elegidas sobre el mismo pool de candidatas reales.
+     * Cada perfil puede venir sin ruta (null) si no hay datos reales que lo
+     * sustenten en este momento; no se inventa información.
+     */
+    public function profiles(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'origin_lat' => ['required', 'numeric', 'between:-90,90'],
+            'origin_lng' => ['required', 'numeric', 'between:-180,180'],
+            'dest_lat' => ['required', 'numeric', 'between:-90,90'],
+            'dest_lng' => ['required', 'numeric', 'between:-180,180'],
+            'count' => ['nullable', 'integer', 'min:1', 'max:5'],
+            'priorize_ciclorutas' => ['nullable', 'boolean'],
+            'profiles' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $origin = ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']];
+        $destination = ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']];
+        $count = isset($data['count']) ? (int) $data['count'] : null;
+        $priority = filter_var($data['priorize_ciclorutas'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        $configured = (array) config('services.map.profiles', []);
+        $requested = $data['profiles'] ?? null;
+
+        if ($requested !== null) {
+            $requestedKeys = array_values(array_filter(
+                array_map('trim', explode(',', $requested)),
+                fn (string $key) => $key !== ''
+            ));
+            // Solo se admiten perfiles válidos; si vienen vacíos o inválidos,
+            // se usa la configuración.
+            $profiles = collect($requestedKeys)
+                ->filter(fn (string $key) => RouteProfile::tryFromMixed($key) !== null)
+                ->values()
+                ->all();
+
+            if ($profiles === []) {
+                $profiles = $configured;
+            }
+        } else {
+            $profiles = $configured;
+        }
+
+        if ($profiles === []) {
+            $profiles = RouteProfile::allowedKeys();
+        }
+
+        $results = $this->routing->profiles($origin, $destination, $profiles, $count, $priority);
+
+        if (empty($results) || collect($results)->every(fn ($entry) => $entry['route'] === null)) {
+            return response()->json(['error' => 'No se pudieron calcular rutas para bicicleta.'], 422);
+        }
+
+        return response()->json([
+            'profiles' => $results,
+            'profiles_requested' => collect($results)->pluck('profile')->values()->all(),
+            'priorize_ciclorutas' => $priority,
+            'query' => [
+                'origin' => $origin,
+                'destination' => $destination,
+            ],
+        ]);
+    }
+
+    /**
      * Recalcula la ruta desde la posición actual del ciclista hasta el destino.
      * Se usa durante la navegación cuando el usuario se desvía de la ruta.
+     *
+     * Acepta 'profile' (opcional) para recalcular conservando el perfil
+     * seleccionado; sin él, mantiene el comportamiento anterior (ruta
+     * recomendada del motor).
      */
     public function recalculate(Request $request): JsonResponse
     {
         $data = $this->routeCoordinates($request);
 
-        $route = $this->routing->recommended(
-            ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
-            ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']]
+        $profile = $request->validate([
+            'profile' => ['nullable', 'string', 'max:40'],
+        ])['profile'] ?? null;
+
+        $priorize = filter_var(
+            $request->input('priorize_ciclorutas', false),
+            FILTER_VALIDATE_BOOLEAN
         );
+
+        if ($profile !== null && RouteProfile::tryFromMixed($profile) !== null) {
+            $route = $this->routing->routesForProfile(
+                ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
+                ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']],
+                RouteProfile::from($profile),
+                null,
+                $priorize,
+            );
+        } else {
+            $route = $this->routing->recommended(
+                ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
+                ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']]
+            );
+        }
 
         if ($route === null) {
             return response()->json(['error' => 'No se pudo recalcular la ruta.'], 422);

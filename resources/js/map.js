@@ -512,7 +512,7 @@ function CicleMap(config) {
     // ------------------------- Navegación (tipo Waze) -------------------------
     function startNavigation() {
         const app = payload();
-        const chosenRoute = selectedRoute();
+        const chosenRoute = app.selectedRoute();
         if (!chosenRoute) return;
         if (!('geolocation' in navigator)) {
             app.status = 'Tu navegador no soporta geolocalización.';

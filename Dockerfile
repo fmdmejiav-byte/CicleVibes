@@ -1,12 +1,10 @@
-```dockerfile
+
 # ============================================================================
 # CicleVibes - Despliegue en Render (Docker)
 # Laravel 12 / PHP 8.2 / MySQL externo / Vite + Leaflet
 # ============================================================================
 
-# ---------------------------------------------------------------------------
 # Etapa 1: construir assets de producción con Node + Vite
-# ---------------------------------------------------------------------------
 FROM node:22-alpine AS assets
 
 WORKDIR /build
@@ -20,9 +18,7 @@ COPY public ./public
 
 RUN npm run build
 
-# ---------------------------------------------------------------------------
 # Etapa 2: PHP + Apache
-# ---------------------------------------------------------------------------
 FROM php:8.2-apache AS runtime
 
 RUN set -eux; \
@@ -75,9 +71,7 @@ RUN composer install \
 
 COPY --from=assets /build/public/build ./public/build
 
-# ---------------------------------------------------------------------------
-# Directorios y permisos de Laravel
-# ---------------------------------------------------------------------------
+# Preparar directorios y permisos de Laravel
 RUN set -eux; \
     mkdir -p \
         storage/app/private \
@@ -93,7 +87,7 @@ RUN set -eux; \
     find storage bootstrap/cache -type d -exec chmod 775 {} \;; \
     find storage bootstrap/cache -type f -exec chmod 664 {} \;
 
-# Apache: servir desde public/
+# Configuración de Apache
 COPY docker/laravel.conf /etc/apache2/sites-available/000-default.conf
 
 RUN printf "ServerName localhost\n" >> /etc/apache2/apache2.conf
@@ -101,4 +95,3 @@ RUN printf "ServerName localhost\n" >> /etc/apache2/apache2.conf
 EXPOSE 8080
 
 ENTRYPOINT ["bash", "/var/www/html/docker-entrypoint.sh"]
-```

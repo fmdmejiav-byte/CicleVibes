@@ -125,7 +125,7 @@
                                     <p class="text-[11px] font-bold uppercase tracking-wider text-[#a7b8b2]">Tu recorrido</p>
                                     <span class="cv-badge">
                                         <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="17.5" r="3.5"></circle><circle cx="18.5" cy="17.5" r="3.5"></circle><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"></path></svg>
-                                        <span x-text="selectedRoute().via_ciclorutas ? 'Ciclorrutas' : 'Bicicleta'"></span>
+                                        <span x-text="selectedRoute()?.via_ciclorutas ? 'Ciclorrutas' : 'Bicicleta'"></span>
                                     </span>
                                 </div>
                                 <div class="mt-3 grid grid-cols-3 gap-3 text-center">
@@ -138,7 +138,7 @@
                                         <p class="text-[11px] font-semibold text-[#a7b8b2]">Tiempo</p>
                                     </div>
                                     <div>
-                                        <p class="text-2xl font-black text-[#f1fff9]" x-text="(selectedRoute().steps?.length ?? 0)"></p>
+                                        <p class="text-2xl font-black text-[#f1fff9]" x-text="(selectedRoute()?.steps?.length ?? 0)"></p>
                                         <p class="text-[11px] font-semibold text-[#a7b8b2]">Pasos</p>
                                     </div>
                                 </div>
@@ -168,7 +168,7 @@
                             </div>
 
                             <!-- Selector de perfil de ruta -->
-                            <div x-show="mode !== 'navigating'" x-cloak>
+                            <div x-show="mode !== 'navigating' && !(mode === 'routes' && selectedProfile === 'direct')" x-cloak>
                                 <p class="text-[11px] font-bold uppercase tracking-wider text-[#a7b8b2]">Perfil de ruta</p>
                                 <div class="profile-scroll mt-2 flex gap-2 overflow-x-auto pb-1">
                                     <template x-for="p in profilesConfig" :key="p.key">
@@ -215,7 +215,7 @@
 
                             <!-- Resultados por perfil -->
                             <div x-show="mode === 'routes' && profileResults.length > 0" x-cloak class="space-y-2">
-                                <div x-show="priorizarCiclorutas && !ciclorutaConnection" x-cloak class="rounded-2xl border border-[rgba(255,159,67,0.35)] bg-[rgba(255,159,67,0.08)] p-3">
+                                <div x-show="selectedProfile !== 'direct' && priorizarCiclorutas && !ciclorutaConnection" x-cloak class="rounded-2xl border border-[rgba(255,159,67,0.35)] bg-[rgba(255,159,67,0.08)] p-3">
                                     <p class="text-sm font-bold text-[#ffb25d]">No existe una conexión ciclista completa con los datos disponibles.</p>
                                     <p class="mt-0.5 text-xs text-[#a7b8b2]">Mostramos la alternativa por calles (OSRM) para que puedas llegar igualmente.</p>
                                 </div>
@@ -253,7 +253,7 @@
                                                     </template>
                                                 </span>
                                             </template>
-                                            <template x-if="item.route.note">
+                                            <template x-if="item.route?.note">
                                                 <span class="mt-1 block text-xs text-[#a7b8b2]" x-text="item.route.note"></span>
                                             </template>
                                             <span x-show="item.route && item.route.cicloruta_coverage_pct > 0" x-cloak class="mt-1.5 block space-y-1">
@@ -268,7 +268,8 @@
                                                     <span x-text="item.route.ciclorutas_used.join(' · ')"></span>
                                                 </span>
                                             </span>
-                                            <span x-show="item.route.metadata" class="mt-1.5 block space-y-1.5">
+                                            <template x-if="item.route?.metadata">
+                                            <span class="mt-1.5 block space-y-1.5">
                                                 <span class="flex flex-wrap items-center gap-x-2 gap-y-1">
                                                     <span class="cv-safety-chip" :class="safetyChipClass(item.route.metadata)"
                                                         x-text="safetyChipText(item.route.metadata)"></span>
@@ -290,6 +291,7 @@
                                                     </span>
                                                 </template>
                                             </span>
+                                            </template>
                                         </span>
                                     </button>
                                 </template>

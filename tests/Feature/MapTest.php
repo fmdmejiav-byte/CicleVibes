@@ -257,3 +257,17 @@ test('el endpoint de ciclorutas devuelve infraestructura ciclista GeoJSON', func
     expect($feature['geometry']['type'])->toBe('LineString')
         ->and($feature['properties']['name'])->toBe('Cicloruta Test');
 });
+
+test('la alternativa directa devuelve geometría sin consultar servicios de perfiles', function () {
+    Http::preventStrayRequests();
+    Http::fake(['router.project-osrm.org/*' => Http::response([
+        'code' => 'Ok',
+        'routes' => [['geometry' => 'o}qxF|bhvSnA{@', 'distance' => 4500, 'duration' => 1080]],
+    ])]);
+    $params = ['origin_lat' => 11.006, 'origin_lng' => -74.782, 'dest_lat' => 10.985, 'dest_lng' => -74.766, 'direct' => 1];
+    $this->getJson(route('maps.route', $params))->assertUnauthorized();
+    $this->actingAs(User::factory()->create())->getJson(route('maps.route', $params))
+        ->assertOk()->assertJsonPath('route.label', 'Ruta directa')
+        ->assertJsonPath('route.distance_km', 4.5)->assertJsonCount(2, 'route.coordinates');
+    Http::assertSentCount(1);
+});

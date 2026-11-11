@@ -4,11 +4,11 @@ El driver opcional `spring` envía las consultas de rutas de Laravel a un servic
 
 ## Probar desde Windows
 
-Con JDK 21 y Maven instalados, abre PowerShell en `backend-java` y ejecuta:
+Con JDK 21 instalado, abre PowerShell en `backend-java` y ejecuta:
 
 ```powershell
-mvn test
-mvn spring-boot:run
+.\mvnw.cmd test
+.\mvnw.cmd spring-boot:run
 ```
 
 Por defecto Spring escucha en `127.0.0.1:8080`. En la terminal de Spring puedes definir antes de arrancar `$env:MAP_OSRM_URL`, `$env:MAP_OSRM_PROFILE`, `$env:BIKE_AVG_SPEED_KMH` y `$env:BIKE_ROUTE_MAX_EXPECTED_SPEED_KMH` para igualar la configuración de Laravel. Usa un servidor OSRM con datos procesados para bicicleta para validar recorridos ciclistas reales. La palabra «cycling» en la URL por sí sola no determina el perfil con el que se procesaron los datos.

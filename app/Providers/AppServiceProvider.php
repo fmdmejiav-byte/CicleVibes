@@ -13,6 +13,7 @@ use App\Services\Routing\OsrmRoutingDriver;
 use App\Services\Routing\Safety\OpenStreetMapSafetyDataProvider;
 use App\Services\Routing\Safety\SafetyScoreService;
 use App\Services\Routing\Safety\SocrataAccidentDataProvider;
+use App\Services\Routing\SpringRoutingDriver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,11 +37,12 @@ class AppServiceProvider extends ServiceProvider
         // Resuelve el motor de rutas para bicicletas según la configuración.
         // Por defecto OSRM (sin API key); se puede cambiar a GraphHopper
         // configurando MAP_ROUTING_DRIVER=graphhopper y una clave real.
-        if ((string) config('services.map.routing_driver') === 'graphhopper') {
-            $this->app->bind(BicycleRoutingDriver::class, GraphHopperRoutingDriver::class);
-        } else {
-            $this->app->bind(BicycleRoutingDriver::class, OsrmRoutingDriver::class);
-        }
+        $driver = match (config('services.map.routing_driver')) {
+            'spring' => SpringRoutingDriver::class,
+            'graphhopper' => GraphHopperRoutingDriver::class,
+            default => OsrmRoutingDriver::class,
+        };
+        $this->app->bind(BicycleRoutingDriver::class, $driver);
     }
 
     /**

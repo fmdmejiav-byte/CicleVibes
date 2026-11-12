@@ -53,10 +53,11 @@ class MapController extends Controller
     {
         $data = $this->routeCoordinates($request);
 
-        $route = $this->routing->recommended(
-            ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']],
-            ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']]
-        );
+        $origin = ['lat' => $data['origin_lat'], 'lng' => $data['origin_lng']];
+        $destination = ['lat' => $data['dest_lat'], 'lng' => $data['dest_lng']];
+        $route = $request->boolean('direct')
+            ? $this->routing->direct($origin, $destination)
+            : $this->routing->recommended($origin, $destination);
 
         if ($route === null) {
             return response()->json(['error' => 'No se pudo calcular la ruta para bicicleta.'], 422);

@@ -141,6 +141,20 @@ class BicycleRoutingService
         return $routes[0] ?? null;
     }
 
+    /** Ruta del motor sin consultas de infraestructura ni clasificación por perfil. */
+    public function direct(array $origin, array $destination): ?array
+    {
+        $routes = $this->driver->routes($origin, $destination, 0) ?? [];
+        foreach ($routes as $route) {
+            if ($this->hasGeometry($route)) {
+                $route['label'] = 'Ruta directa';
+                return $route;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Construye la ruta priorizando ciclorrutas.
      *

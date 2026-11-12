@@ -366,7 +366,7 @@ function CicleMap(config) {
         return p && Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
     }
 
-    function calculateProfiles() {
+    async function calculateProfiles() {
         const app = payload();
 
         if (!isValidPoint(app.origin)) {
@@ -395,38 +395,54 @@ function CicleMap(config) {
             priorize_ciclorutas: app.priorizarCiclorutas ? 1 : 0,
         };
 
-        axios
-            .get('/api/maps/profiles', { params: requestParams })
-            .then((res) => {
-                app.profileResults = res.data.profiles || [];
-
-                if (!app.profileResults.length) {
-                    app.status = 'No se encontraron rutas para bicicleta.';
-                    return;
+        try {
+            let entries;
+            let direct = false;
+            try {
+                const response = await axios.get('/api/maps/profiles', { params: requestParams });
+                entries = response.data.profiles;
+                if (!Array.isArray(entries) || !entries.some(item => item.route?.coordinates?.length >= 2)) {
+                    throw new Error('No hay perfiles con geometría');
                 }
-
-                // Conexión ciclista completa solo si alguna ruta del pool por
-                // perfil recorrió realmente la red (via_ciclorutas).
-                app.ciclorutaConnection = app.priorizarCiclorutas && app.profileResults.some(
-                    (p) => p.route && p.route.via_ciclorutas === true
-                );
-
-                if (!app.profileResults.some((p) => p.profile === app.selectedProfile)) {
-                    app.selectedProfile = app.profileResults[0].profile;
+            } catch (profileError) {
+                const status = profileError.response?.status;
+                if (status && status < 500 && (status !== 422 || profileError.response.data?.errors)) {
+                    throw profileError;
                 }
+                console.warn('[CicleVibes] Perfiles no disponibles', profileError);
+                app.status = 'Consultando una ruta directa…';
+                const { data } = await axios.get('/api/maps/route', {
+                    params: { ...requestParams, direct: 1 },
+                });
+                if (!Array.isArray(data.route?.coordinates) || data.route.coordinates.length < 2) {
+                    throw new Error('El motor no devolvió un recorrido para estos puntos.');
+                }
+                entries = [{ profile: 'direct', label: 'Ruta directa', emoji: '', route: data.route }];
+                direct = true;
+            }
 
-                renderProfileRoutes();
-                app.status = '';
-                app.mode = 'routes';
-            })
-            .catch((err) => {
-                console.error('[CicleVibes] Falla al calcular rutas:', err?.response?.status, err?.response?.data || err);
-                app.status = err.response?.data?.error || 'No pudimos calcular las rutas. Inténtalo de nuevo.';
-                addToast(app.status, 'error');
-            })
-            .finally(() => {
-                app.routing = false;
-            });
+            app.profileResults = entries;
+            app.ciclorutaConnection = !direct && app.priorizarCiclorutas &&
+                entries.some(item => item.route?.via_ciclorutas === true);
+            const available = entries.filter(item => item.route?.coordinates?.length >= 2);
+            if (!available.some(item => item.profile === app.selectedProfile)) {
+                app.selectedProfile = available[0].profile;
+            }
+            renderProfileRoutes();
+            app.mode = 'routes';
+            app.status = direct ? 'Ruta directa. No se pudieron comparar los perfiles.' : '';
+        } catch (error) {
+            console.error('[CicleVibes] Cálculo de ruta', error);
+            const code = error.response?.status;
+            const message = {
+                401: 'Inicia sesión de nuevo para calcular una ruta.',
+                429: 'Demasiadas consultas. Espera un minuto y vuelve a calcular.',
+                422: 'El motor no encontró una ruta entre estos puntos. Comprueba la conexión con el motor y prueba otro destino.',
+            }[code];
+            app.status = message || (code ? `Error HTTP ${code} al consultar la ruta.` : error.message);
+        } finally {
+            app.routing = false;
+        }
     }
 
     function renderProfileRoutes() {
@@ -635,13 +651,14 @@ function CicleMap(config) {
         app.status = 'Calculando nueva ruta…';
 
         axios
-            .get('/api/maps/recalculate', {
+            .get(app.selectedProfile === 'direct' ? '/api/maps/route' : '/api/maps/recalculate', {
                 params: {
                     origin_lat: userLocation.lat,
                     origin_lng: userLocation.lng,
                     dest_lat: app.destination.lat,
                     dest_lng: app.destination.lng,
                     profile: app.selectedProfile || 'fastest',
+                    direct: app.selectedProfile === 'direct' ? 1 : 0,
                     priorize_ciclorutas: app.priorizarCiclorutas ? 1 : 0,
                 },
             })
@@ -649,7 +666,7 @@ function CicleMap(config) {
                 const route = res.data.route;
                 applyRouteFixes(route);
                 app.routeInfo = route;
-                app.selectedProfile = route.profile || app.selectedProfile;
+                if (app.selectedProfile !== 'direct') app.selectedProfile = route.profile || app.selectedProfile;
                 app.profileResults = [
                     {
                         profile: app.selectedProfile,

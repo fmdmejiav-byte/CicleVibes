@@ -97,6 +97,7 @@ return [
 
         // Driver de rutas activo: 'osrm' (sin clave, por defecto) o 'graphhopper'.
         // Para GraphHopper conviene configurar MAP_GRAPHHOPPER_KEY en .env.
+        'spring_routing_url' => env('SPRING_ROUTING_URL', 'http://127.0.0.1:8080'),
         'routing_driver' => env('MAP_ROUTING_DRIVER', 'osrm'),
 
         // GraphHopper (motor de rutas para bicicleta; requiere API key real).
